@@ -5,7 +5,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 
-// Добавляем новые маршруты
 object Routes {
     const val EDITOR = "editor"
     const val SETTINGS = "settings"
@@ -20,12 +19,13 @@ fun AppNavigation() {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = Routes.EDITOR) {
         composable(Routes.EDITOR) { EditorScreen(navController = navController) }
-        // Теперь SettingsScreen тоже принимает navController, чтобы переходить дальше
         composable(Routes.SETTINGS) { SettingsScreen(navController = navController) }
-        // Регистрируем все новые экраны
-        composable(Routes.EDITOR_SETTINGS) { EditorSettingsScreen() }
-        composable(Routes.APP_SETTINGS) { AppSettingsScreen() }
-        composable(Routes.TERMINAL_SETTINGS) { TerminalSettingsScreen() }
-        composable(Routes.FORMATTER_SETTINGS) { FormatterSettingsScreen() }
+
+        // --- ИЗМЕНЕНИЯ ЗДЕСЬ ---
+        // Теперь мы передаем navController в каждый из дочерних экранов
+        composable(Routes.EDITOR_SETTINGS) { EditorSettingsScreen(navController = navController) }
+        composable(Routes.APP_SETTINGS) { AppSettingsScreen(navController = navController) }
+        composable(Routes.TERMINAL_SETTINGS) { TerminalSettingsScreen(navController = navController) }
+        composable(Routes.FORMATTER_SETTINGS) { FormatterSettingsScreen(navController = navController) }
     }
 }
