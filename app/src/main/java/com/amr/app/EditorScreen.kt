@@ -1,10 +1,9 @@
 package com.amr.app
 
-import com.amr.app.theme.AppTheme
-
 import android.graphics.Color
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding // <-- Убедитесь, что этот импорт есть
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
@@ -13,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.res.ResourcesCompat
 import androidx.navigation.NavController
+import com.amr.app.theme.AppTheme
 import com.amrdeveloper.codeview.Code
 import com.amrdeveloper.codeviewlibrary.CustomCodeViewAdapter
 import com.amrdeveloper.codeviewlibrary.R
@@ -23,7 +23,6 @@ import java.util.HashMap
 
 @Composable
 fun EditorScreen(navController: NavController) {
-    // Применяем тему
     AppTheme {
         var showMenu by remember { mutableStateOf(false) }
 
@@ -52,8 +51,9 @@ fun EditorScreen(navController: NavController) {
                     }
                 )
             }
-        ) { paddingValues ->
-            Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) { // <-- Добавил paddingValues
+        ) { paddingValues -> // <-- paddingValues создается здесь
+            // ИСПОЛЬЗУЕМ ЕГО ВНУТРИ ЭТОГО БЛОКА
+            Column(modifier = Modifier.padding(paddingValues)) { // <-- ИСПРАВЛЕНО ЗДЕСЬ
                 AndroidView(
                     modifier = Modifier.fillMaxSize().weight(1f),
                     factory = { context ->
@@ -89,5 +89,5 @@ fun EditorScreen(navController: NavController) {
                 )
             }
         }
-    } // <-- Вот здесь не хватало закрывающей скобки для AppTheme
+    }
 }
