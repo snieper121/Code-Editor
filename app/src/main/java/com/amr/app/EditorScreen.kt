@@ -3,9 +3,10 @@ package com.amr.app
 import android.graphics.Color
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding // <-- Убедитесь, что этот импорт есть
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu // <-- Иконка "гамбургер"
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -30,17 +31,48 @@ fun EditorScreen(navController: NavController) {
             topBar = {
                 TopAppBar(
                     title = { Text("Code Editor") },
-                    actions = {
-                        IconButton(onClick = { showMenu = !showMenu }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "More")
+                    // Кнопка для навигации (пока "гамбургер")
+                    navigationIcon = {
+                        IconButton(onClick = { /* TODO: Open file drawer */ }) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = "Открыть файловый менеджер"
+                            )
                         }
+                    },
+                    actions = {
+                        // Кнопка "три точки" для действий с файлом
+                        IconButton(onClick = { showMenu = !showMenu }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "Действия")
+                        }
+                        // Наше обновленное выпадающее меню
                         DropdownMenu(
                             expanded = showMenu,
                             onDismissRequest = { showMenu = false }
                         ) {
+                            // --- НОВЫЕ ПУНКТЫ МЕНЮ ---
+
                             DropdownMenuItem(onClick = { /* TODO */ ; showMenu = false }) {
-                                Text("Save File")
+                                Text("Выбрать файл")
                             }
+                            DropdownMenuItem(onClick = { /* TODO */ ; showMenu = false }) {
+                                Text("Выбрать папку")
+                            }
+                            DropdownMenuItem(onClick = { /* TODO */ ; showMenu = false }) {
+                                Text("Новый файл")
+                            }
+
+                            Divider() // Визуальный разделитель
+
+                            DropdownMenuItem(onClick = { /* TODO */ ; showMenu = false }) {
+                                Text("Сохранить")
+                            }
+                            DropdownMenuItem(onClick = { /* TODO */ ; showMenu = false }) {
+                                Text("Сохранить как...")
+                            }
+
+                            Divider() // Визуальный разделитель
+
                             DropdownMenuItem(onClick = {
                                 navController.navigate(Routes.SETTINGS)
                                 showMenu = false
@@ -51,9 +83,8 @@ fun EditorScreen(navController: NavController) {
                     }
                 )
             }
-        ) { paddingValues -> // <-- paddingValues создается здесь
-            // ИСПОЛЬЗУЕМ ЕГО ВНУТРИ ЭТОГО БЛОКА
-            Column(modifier = Modifier.padding(paddingValues)) { // <-- ИСПРАВЛЕНО ЗДЕСЬ
+        ) { paddingValues ->
+            Column(modifier = Modifier.padding(paddingValues)) {
                 AndroidView(
                     modifier = Modifier.fillMaxSize().weight(1f),
                     factory = { context ->
