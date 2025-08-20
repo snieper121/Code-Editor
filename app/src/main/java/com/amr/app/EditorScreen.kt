@@ -54,7 +54,21 @@ fun EditorScreen(
     AppTheme {
         Scaffold(
             scaffoldState = scaffoldState,
-            drawerContent = { /* ... без изменений ... */ },
+            drawerGesturesEnabled = scaffoldState.drawerState.isOpen,
+            drawerContent = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = "Файловый менеджер",
+                        style = MaterialTheme.typography.h6
+                    )
+                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    Text("Здесь будет структура файлов...")
+                }
+            },
             topBar = {
                 TopAppBar(
                     title = { Text("Code Editor") },
