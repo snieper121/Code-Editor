@@ -2,7 +2,7 @@ name: Build Code Editor
 on:
   push:
     branches:
-      - main  # Указываем нашу основную ветку
+      - main
 
 jobs:
   build:
@@ -17,11 +17,22 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
+    # --- НАЧАЛО НОВОГО ШАГА ---
+    - name: Cache Gradle packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+    # --- КОНЕЦ НОВОГО ШАГА ---
+
     - name: Grant execute permission for gradlew
       run: chmod +x ./gradlew
 
     - name: Build with Gradle
-      # Собираем именно модуль-пример 'app'
       run: ./gradlew :app:assembleDebug
 
     - name: Upload APK
