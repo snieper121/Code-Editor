@@ -11,10 +11,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 
+import com.amr.app.theme.AppTheme
+
 @Composable
 fun SettingsScreen(navController: NavController) {
-    // Состояние для модального окна "О приложении"
-    var showAboutDialog by remember { mutableStateOf(false) }
+    // Применяем тему НЕПОСРЕДСТВЕННО здесь
+    AppTheme {
+        var showAboutDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -54,7 +57,6 @@ fun SettingsScreen(navController: NavController) {
     }
 }
 
-// Вспомогательная функция для создания красивых пунктов меню
 @Composable
 private fun SettingsItem(title: String, onClick: () -> Unit) {
     Text(

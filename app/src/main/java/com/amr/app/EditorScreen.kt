@@ -1,5 +1,7 @@
 package com.amr.app
 
+import com.amr.app.theme.AppTheme
+
 import android.graphics.Color
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,8 +24,9 @@ import java.util.HashMap
 // Теперь наш экран принимает NavController
 @Composable
 fun EditorScreen(navController: NavController) {
-    var showMenu by remember { mutableStateOf(false) }
-
+    AppTheme {
+        var showMenu by remember { mutableStateOf(false) }
+        
     Scaffold(
         topBar = {
             TopAppBar(

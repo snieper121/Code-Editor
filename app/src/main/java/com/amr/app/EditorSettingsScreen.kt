@@ -9,29 +9,32 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-
+import androidx.compose.material.Text
 import androidx.navigation.NavController // <-- Нам понадобится NavController
+import com.amr.app.theme.AppTheme
 
-// Теперь экран принимает NavController, чтобы можно было вернуться назад
 @Composable
 fun EditorSettingsScreen(navController: NavController) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Настройки редактора") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+    // Применяем тему НЕПОСРЕДСТВЕННО здесь
+    AppTheme {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Настройки редактора") },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                        }
                     }
-                }
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier.fillMaxSize().padding(paddingValues),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("Здесь будут настройки редактора")
+                )
+            }
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier.fillMaxSize().padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Здесь будут настройки редактора")
+            }
         }
     }
 }
