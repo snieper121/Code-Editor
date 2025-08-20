@@ -1,15 +1,15 @@
 package com.amr.app
 
 import android.graphics.Color
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu // <-- Иконка "гамбургер"
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.res.ResourcesCompat
 import androidx.navigation.NavController
@@ -20,20 +20,48 @@ import com.amrdeveloper.codeviewlibrary.R
 import com.amrdeveloper.codeviewlibrary.syntax.LanguageManager
 import com.amrdeveloper.codeviewlibrary.syntax.LanguageName
 import com.amrdeveloper.codeviewlibrary.syntax.ThemeName
+import kotlinx.coroutines.launch // <-- ВАЖНЫЙ ИМПОРТ
 import java.util.HashMap
 
 @Composable
 fun EditorScreen(navController: NavController) {
     AppTheme {
+        // --- НОВЫЕ СОСТОЯНИЯ ДЛЯ SCAFFOLD И DRAWER ---
+        val scaffoldState = rememberScaffoldState() // Хранит состояние (открыт/закрыт drawer)
+        val scope = rememberCoroutineScope() // Для запуска анимации открытия/закрытия
+
         var showMenu by remember { mutableStateOf(false) }
 
         Scaffold(
+            // --- ДОБАВЛЯЕМ НОВЫЕ ПАРАМЕТРЫ В SCAFFOLD ---
+            scaffoldState = scaffoldState, // Передаем состояние в Scaffold
+            drawerContent = {
+                // --- ЭТО СОДЕРЖИМОЕ НАШЕЙ ВЫДВИЖНОЙ ПАНЕЛИ ---
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = "Файловый менеджер",
+                        style = MaterialTheme.typography.h6
+                    )
+                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    // Сюда мы в будущем добавим список файлов и папок
+                    Text("Здесь будет структура файлов...")
+                }
+            },
             topBar = {
                 TopAppBar(
                     title = { Text("Code Editor") },
-                    // Кнопка для навигации (пока "гамбургер")
                     navigationIcon = {
-                        IconButton(onClick = { /* TODO: Open file drawer */ }) {
+                        // --- ОЖИВЛЯЕМ КНОПКУ "ГАМБУРГЕР" ---
+                        IconButton(onClick = {
+                            // Запускаем корутину для плавного открытия панели
+                            scope.launch {
+                                scaffoldState.drawerState.open()
+                            }
+                        }) {
                             Icon(
                                 imageVector = Icons.Default.Menu,
                                 contentDescription = "Открыть файловый менеджер"
@@ -41,17 +69,14 @@ fun EditorScreen(navController: NavController) {
                         }
                     },
                     actions = {
-                        // Кнопка "три точки" для действий с файлом
+                        // ... остальной код для actions (кнопка "три точки" и меню) без изменений ...
                         IconButton(onClick = { showMenu = !showMenu }) {
                             Icon(Icons.Default.MoreVert, contentDescription = "Действия")
                         }
-                        // Наше обновленное выпадающее меню
                         DropdownMenu(
                             expanded = showMenu,
                             onDismissRequest = { showMenu = false }
                         ) {
-                            // --- НОВЫЕ ПУНКТЫ МЕНЮ ---
-
                             DropdownMenuItem(onClick = { /* TODO */ ; showMenu = false }) {
                                 Text("Выбрать файл")
                             }
@@ -61,18 +86,14 @@ fun EditorScreen(navController: NavController) {
                             DropdownMenuItem(onClick = { /* TODO */ ; showMenu = false }) {
                                 Text("Новый файл")
                             }
-
-                            Divider() // Визуальный разделитель
-
+                            Divider()
                             DropdownMenuItem(onClick = { /* TODO */ ; showMenu = false }) {
                                 Text("Сохранить")
                             }
                             DropdownMenuItem(onClick = { /* TODO */ ; showMenu = false }) {
                                 Text("Сохранить как...")
                             }
-
-                            Divider() // Визуальный разделитель
-
+                            Divider()
                             DropdownMenuItem(onClick = {
                                 navController.navigate(Routes.SETTINGS)
                                 showMenu = false
@@ -84,12 +105,12 @@ fun EditorScreen(navController: NavController) {
                 )
             }
         ) { paddingValues ->
+            // ... остальной код (Column и AndroidView) без изменений ...
             Column(modifier = Modifier.padding(paddingValues)) {
                 AndroidView(
                     modifier = Modifier.fillMaxSize().weight(1f),
                     factory = { context ->
                         com.amrdeveloper.codeview.CodeView(context).apply {
-                            // ... вся логика настройки CodeView остается без изменений ...
                             setBackgroundColor(Color.parseColor("#212121"))
                             val jetBrainsMono = ResourcesCompat.getFont(context, R.font.jetbrains_mono_medium)
                             this.typeface = jetBrainsMono
