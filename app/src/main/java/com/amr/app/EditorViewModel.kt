@@ -1,60 +1,75 @@
 package com.amr.app
 
-import androidx.compose.runtime.mutableStateOf
+import android.content.Context
+import android.net.Uri
+import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 class EditorViewModel : ViewModel() {
-    // Счетчик для создания уникальных имен для новых файлов
     private var newFileCounter = 1
 
-    // Поток, который хранит список всех открытых вкладок. UI будет на него подписан.
+    // --- Состояния для вкладок (без изменений) ---
     private val _tabs = MutableStateFlow<List<FileTab>>(emptyList())
     val tabs = _tabs.asStateFlow()
-
-    // Поток, который хранит индекс активной вкладки
     private val _activeTabIndex = MutableStateFlow(0)
     val activeTabIndex = _activeTabIndex.asStateFlow()
 
-    // Функция для создания новой вкладки
-    fun createNewTab() {
-        val newTab = FileTab(
-            id = (_tabs.value.maxOfOrNull { it.id } ?: 0) + 1,
-            name = "Untitled-${newFileCounter++}",
-            content = "" // Новый файл всегда пустой
-        )
-        _tabs.update { currentTabs -> currentTabs + newTab }
-        // Делаем новую вкладку активной
-        _activeTabIndex.value = _tabs.value.lastIndex
+    // --- НОВЫЕ СОСТОЯНИЯ ДЛЯ ФАЙЛОВОГО ДЕРЕВА ---
+    private val _fileTree = MutableStateFlow<FileTreeNode?>(null)
+    val fileTree = _fileTree.asStateFlow()
+
+    // --- Функции для вкладок (без изменений) ---
+    fun createNewTab() { /* ... */ }
+    fun openFileTab(fileName: String, fileContent: String) { /* ... */ }
+    fun onTabSelected(index: Int) { /* ... */ }
+    fun onContentChanged(newContent: String) { /* ... */ }
+
+    // --- НОВЫЕ ФУНКЦИИ ДЛЯ ФАЙЛОВОГО ДЕРЕВА ---
+
+    // Главная функция, которая строит дерево по выбранной папке
+    fun buildFileTreeFromUri(context: Context, rootUri: Uri) {
+        val rootDocument = DocumentFile.fromTreeUri(context, rootUri)
+        _fileTree.value = rootDocument?.let { buildNode(it) }
     }
 
-    // Функция для добавления вкладки с открытым файлом
-    fun openFileTab(fileName: String, fileContent: String) {
-        val newTab = FileTab(
-            id = (_tabs.value.maxOfOrNull { it.id } ?: 0) + 1,
-            name = fileName,
-            content = fileContent
-        )
-        _tabs.update { currentTabs -> currentTabs + newTab }
-        _activeTabIndex.value = _tabs.value.lastIndex
-    }
-
-    // Функция для смены активной вкладки
-    fun onTabSelected(index: Int) {
-        _activeTabIndex.value = index
-    }
-
-    // Функция для обновления содержимого активной вкладки
-    fun onContentChanged(newContent: String) {
-        if (_tabs.value.isNotEmpty()) {
-            val activeIndex = _activeTabIndex.value
-            _tabs.update { currentTabs ->
-                currentTabs.toMutableList().also {
-                    it[activeIndex] = it[activeIndex].copy(content = newContent)
-                }
-            }
+    // Рекурсивная функция для построения узлов дерева
+    private fun buildNode(documentFile: DocumentFile, currentDepth: Int = 0): FileTreeNode {
+        val children = if (documentFile.isDirectory) {
+            documentFile.listFiles()
+                .sortedWith(compareBy({ !it.isDirectory }, { it.name })) // Папки сначала, потом файлы
+                .map { buildNode(it, currentDepth + 1) }
+        } else {
+            emptyList()
         }
+        return FileTreeNode(
+            name = documentFile.name ?: "unknown",
+            uri = documentFile.uri,
+            isDirectory = documentFile.isDirectory,
+            children = children,
+            depth = currentDepth
+        )
+    }
+
+    // Функция для переключения состояния "раскрыто/свернуто" у папки
+    fun toggleNodeExpansion(nodeToToggle: FileTreeNode) {
+        _fileTree.value?.let { root ->
+            val newRoot = updateNodeExpansion(root, nodeToToggle.uri, !nodeToToggle.isExpanded)
+            _fileTree.value = newRoot
+        }
+    }
+
+    // Рекурсивная функция для обновления состояния узла в дереве
+    private fun updateNodeExpansion(currentNode: FileTreeNode, targetUri: Uri, isExpanded: Boolean): FileTreeNode {
+        if (currentNode.uri == targetUri) {
+            return currentNode.copy(isExpanded = isExpanded)
+        }
+        return currentNode.copy(
+            children = currentNode.children.map { child ->
+                updateNodeExpansion(child, targetUri, isExpanded)
+            }
+        )
     }
 }

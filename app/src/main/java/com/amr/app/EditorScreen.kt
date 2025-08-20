@@ -3,18 +3,25 @@ package com.amr.app
 import android.graphics.Color
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.res.ResourcesCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -38,9 +45,27 @@ fun EditorScreen(
     val scope = rememberCoroutineScope()
     var showMenu by remember { mutableStateOf(false) }
 
+    // Состояния из ViewModel
     val tabs by editorViewModel.tabs.collectAsState()
     val activeTabIndex by editorViewModel.activeTabIndex.collectAsState()
+    val fileTree by editorViewModel.fileTree.collectAsState()
 
+    // Лаунчер для выбора папки
+    val folderPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree(),
+        onResult = { uri ->
+            uri?.let {
+                val contentResolver = context.contentResolver
+                val takeFlags: Int = android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                        android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                contentResolver.takePersistableUriPermission(it, takeFlags)
+                editorViewModel.buildFileTreeFromUri(context, it)
+                scope.launch { scaffoldState.drawerState.close() }
+            }
+        }
+    )
+
+    // Лаунчер для выбора файла
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri ->
@@ -57,17 +82,30 @@ fun EditorScreen(
             scaffoldState = scaffoldState,
             drawerGesturesEnabled = scaffoldState.drawerState.isOpen,
             drawerContent = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp)
-                ) {
+                // Содержимое выдвижной панели (файловый менеджер)
+                Column(modifier = Modifier.fillMaxSize()) {
                     Text(
-                        text = "Файловый менеджер",
-                        style = MaterialTheme.typography.h6
+                        "Файловый менеджер",
+                        style = MaterialTheme.typography.h6,
+                        modifier = Modifier.padding(16.dp)
                     )
-                    Divider(modifier = Modifier.padding(vertical = 8.dp))
-                    Text("Здесь будет структура файлов...")
+                    Divider()
+                    fileTree?.let { rootNode ->
+                        FileTreeView(
+                            root = rootNode,
+                            onNodeClick = { node ->
+                                if (node.isDirectory) {
+                                    editorViewModel.toggleNodeExpansion(node)
+                                } else {
+                                    val content = context.contentResolver.openInputStream(node.uri)?.bufferedReader()?.readText() ?: ""
+                                    editorViewModel.openFileTab(node.name, content)
+                                    scope.launch { scaffoldState.drawerState.close() }
+                                }
+                            }
+                        )
+                    } ?: Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Папка не выбрана")
+                    }
                 }
             },
             topBar = {
@@ -82,16 +120,17 @@ fun EditorScreen(
                         IconButton(onClick = { showMenu = !showMenu }) {
                             Icon(Icons.Default.MoreVert, contentDescription = "Действия")
                         }
-                        // --- ВОЗВРАЩАЕМ ВСЕ ПУНКТЫ МЕНЮ ---
                         DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                             DropdownMenuItem(onClick = {
                                 filePickerLauncher.launch("*/*")
                                 showMenu = false
                             }) { Text("Выбрать файл") }
 
-                            DropdownMenuItem(onClick = { /* TODO */ ; showMenu = false }) {
-                                Text("Выбрать папку")
-                            }
+                            DropdownMenuItem(onClick = {
+                                folderPickerLauncher.launch(null)
+                                showMenu = false
+                            }) { Text("Выбрать папку") }
+
                             DropdownMenuItem(onClick = {
                                 editorViewModel.createNewTab()
                                 showMenu = false
@@ -163,7 +202,6 @@ fun CodeViewForTab(content: String, onContentChange: (String) -> Unit) {
         modifier = Modifier.fillMaxSize(),
         factory = { context ->
             com.amrdeveloper.codeview.CodeView(context).apply {
-                // --- ВОЗВРАЩАЕМ ВСЮ ЛОГИКУ НАСТРОЙКИ СТИЛЕЙ ---
                 setBackgroundColor(Color.parseColor("#212121"))
                 val jetBrainsMono = ResourcesCompat.getFont(context, R.font.jetbrains_mono_medium)
                 this.typeface = jetBrainsMono
@@ -189,7 +227,6 @@ fun CodeViewForTab(content: String, onContentChange: (String) -> Unit) {
                 this.setPairCompleteMap(pairCompleteMap)
                 this.enablePairComplete(true)
                 this.enablePairCompleteCenterCursor(true)
-                // ----------------------------------------------------
 
                 addTextChangedListener(object : android.text.TextWatcher {
                     override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -202,4 +239,40 @@ fun CodeViewForTab(content: String, onContentChange: (String) -> Unit) {
             }
         }
     )
+}
+
+@Composable
+fun FileTreeView(root: FileTreeNode, onNodeClick: (FileTreeNode) -> Unit) {
+    LazyColumn {
+        items(root.flatten()) { node ->
+            FileTreeItem(node = node, onClick = { onNodeClick(node) })
+        }
+    }
+}
+
+fun FileTreeNode.flatten(): List<FileTreeNode> {
+    val list = mutableListOf<FileTreeNode>()
+    list.add(this)
+    if (this.isExpanded) {
+        this.children.forEach { child ->
+            list.addAll(child.flatten())
+        }
+    }
+    return list
+}
+
+@Composable
+fun FileTreeItem(node: FileTreeNode, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(start = (node.depth * 16).dp, top = 4.dp, bottom = 4.dp, end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        val icon: ImageVector = if (node.isDirectory) Icons.Default.Folder else Icons.Default.InsertDriveFile
+        Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(20.dp))
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(text = node.name, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
 }
