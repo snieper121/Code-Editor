@@ -6,7 +6,11 @@ plugins {
 android {
     compileSdkVersion 34
     namespace 'com.amrdeveloper.codeviewlibrary'
-
+    
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+    
     buildFeatures {
         compose true
     }
