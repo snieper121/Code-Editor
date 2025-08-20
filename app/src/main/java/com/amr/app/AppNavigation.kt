@@ -5,27 +5,27 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 
-// Определяем маршруты для наших экранов
+// Добавляем новые маршруты
 object Routes {
     const val EDITOR = "editor"
     const val SETTINGS = "settings"
+    const val EDITOR_SETTINGS = "editor_settings"
+    const val APP_SETTINGS = "app_settings"
+    const val TERMINAL_SETTINGS = "terminal_settings"
+    const val FORMATTER_SETTINGS = "formatter_settings"
 }
 
 @Composable
 fun AppNavigation() {
-    // Создаем контроллер, который будет управлять навигацией
     val navController = rememberNavController()
-
-    // NavHost - это контейнер, который будет отображать нужный экран
     NavHost(navController = navController, startDestination = Routes.EDITOR) {
-        // Описываем экран редактора
-        composable(Routes.EDITOR) {
-            // Передаем navController в EditorScreen, чтобы он мог переходить на другие экраны
-            EditorScreen(navController = navController)
-        }
-        // Описываем экран настроек
-        composable(Routes.SETTINGS) {
-            SettingsScreen()
-        }
+        composable(Routes.EDITOR) { EditorScreen(navController = navController) }
+        // Теперь SettingsScreen тоже принимает navController, чтобы переходить дальше
+        composable(Routes.SETTINGS) { SettingsScreen(navController = navController) }
+        // Регистрируем все новые экраны
+        composable(Routes.EDITOR_SETTINGS) { EditorSettingsScreen() }
+        composable(Routes.APP_SETTINGS) { AppSettingsScreen() }
+        composable(Routes.TERMINAL_SETTINGS) { TerminalSettingsScreen() }
+        composable(Routes.FORMATTER_SETTINGS) { FormatterSettingsScreen() }
     }
 }
