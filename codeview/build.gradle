@@ -4,12 +4,12 @@ plugins {
 }
 
 android {
-    compileSdkVersion 33
+    compileSdkVersion 34
     namespace 'com.amrdeveloper.codeview'
 
     defaultConfig {
         minSdkVersion 15
-        targetSdkVersion 33
+        targetSdkVersion 34
         versionCode 15
         versionName "1.3.9"
 
