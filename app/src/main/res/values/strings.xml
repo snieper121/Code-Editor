@@ -1,0 +1,32 @@
+<resources>
+    <string name="app_name">CodeView</string>
+
+    <!-- Actions -->
+    <string name="find_and_replace">Find And Replace</string>
+    <string name="search_keyword">Search keyword</string>
+    <string name="find_previous_match">Find previous Match</string>
+    <string name="find_next_match">Find Next Match</string>
+    <string name="replacement">Replacement</string>
+    <string name="replace_all">Replace all</string>
+    <string name="clear_text">Clear Text</string>
+    <string name="comment">Comment</string>
+    <string name="uncomment">UnComment</string>
+    <string name="relative_line_number">Relative Line Number</string>
+    <string name="undo">Undo</string>
+    <string name="redo">Redo</string>
+
+    <!-- Programming Languages -->
+    <string name="languages">Languages</string>
+    <string name="java"> Java </string>
+    <string name="python"> Python </string>
+    <string name="go"> Go </string>
+
+    <!-- Themes -->
+    <string name="themes">Themes</string>
+    <string name="monokia">Monokia</string>
+    <string name="noctics_white">Noctics White</string>
+    <string name="five_color_dark">Five Color Dark</string>
+    <string name="orange_box">Orange Box</string>
+
+    <string name="source_position">%1$d:%2$d</string>
+</resources>
