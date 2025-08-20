@@ -1,5 +1,8 @@
 package com.amr.app
 
+import com.amr.app.theme.Shapes
+import com.amr.app.theme.Typography
+
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.Text
