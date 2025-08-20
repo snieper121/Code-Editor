@@ -21,76 +21,73 @@ import com.amrdeveloper.codeviewlibrary.syntax.LanguageName
 import com.amrdeveloper.codeviewlibrary.syntax.ThemeName
 import java.util.HashMap
 
-// Теперь наш экран принимает NavController
 @Composable
 fun EditorScreen(navController: NavController) {
+    // Применяем тему
     AppTheme {
         var showMenu by remember { mutableStateOf(false) }
-        
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Code Editor") },
-                actions = {
-                    IconButton(onClick = { showMenu = !showMenu }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "More")
-                    }
-                    DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false }
-                    ) {
-                        DropdownMenuItem(onClick = { /* TODO */ ; showMenu = false }) {
-                            Text("Save File")
+
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Code Editor") },
+                    actions = {
+                        IconButton(onClick = { showMenu = !showMenu }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "More")
                         }
-                        // НОВЫЙ ПУНКТ МЕНЮ
-                        DropdownMenuItem(onClick = {
-                            navController.navigate(Routes.SETTINGS) // Переходим на экран настроек
-                            showMenu = false
-                        }) {
-                            Text("Настройки")
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false }
+                        ) {
+                            DropdownMenuItem(onClick = { /* TODO */ ; showMenu = false }) {
+                                Text("Save File")
+                            }
+                            DropdownMenuItem(onClick = {
+                                navController.navigate(Routes.SETTINGS)
+                                showMenu = false
+                            }) {
+                                Text("Настройки")
+                            }
                         }
                     }
-                }
-            )
-        }
-    ) { paddingValues ->
-        // ИСПРАВЛЕНИЕ ПРОБЛЕМЫ С ЦЕНТРИРОВАНИЕМ
-        Column(modifier = Modifier.fillMaxSize()) {
-            AndroidView(
-                // Modifier.weight(1f) заставляет этот элемент занять все оставшееся место
-                modifier = Modifier.fillMaxSize().weight(1f),
-                factory = { context ->
-                    com.amrdeveloper.codeview.CodeView(context).apply {
-                        // ... вся логика настройки CodeView остается без изменений ...
-                        setBackgroundColor(Color.parseColor("#212121"))
-                        val jetBrainsMono = ResourcesCompat.getFont(context, R.font.jetbrains_mono_medium)
-                        this.typeface = jetBrainsMono
-                        this.setEnableLineNumber(true)
-                        this.setLineNumberTextColor(Color.GRAY)
-                        this.setLineNumberTextSize(25f)
-                        this.setEnableHighlightCurrentLine(true)
-                        this.setHighlightCurrentLineColor(Color.DKGRAY)
-                        this.setTabLength(4)
-                        this.setEnableAutoIndentation(true)
-                        val languageManager = LanguageManager(context, this)
-                        languageManager.applyTheme(LanguageName.JAVA, ThemeName.MONOKAI)
-                        val codeList: List<Code> = languageManager.getLanguageCodeList(LanguageName.JAVA)
-                        val adapter = CustomCodeViewAdapter(context, codeList)
-                        this.setAdapter(adapter)
-                        val pairCompleteMap: MutableMap<Char, Char> = HashMap()
-                        pairCompleteMap['{'] = '}'
-                        pairCompleteMap['['] = ']'
-                        pairCompleteMap['('] = ')'
-                        pairCompleteMap['<'] = '>'
-                        pairCompleteMap['"'] = '"'
-                        pairCompleteMap['\''] = '\''
-                        this.setPairCompleteMap(pairCompleteMap)
-                        this.enablePairComplete(true)
-                        this.enablePairCompleteCenterCursor(true)
+                )
+            }
+        ) { paddingValues ->
+            Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) { // <-- Добавил paddingValues
+                AndroidView(
+                    modifier = Modifier.fillMaxSize().weight(1f),
+                    factory = { context ->
+                        com.amrdeveloper.codeview.CodeView(context).apply {
+                            // ... вся логика настройки CodeView остается без изменений ...
+                            setBackgroundColor(Color.parseColor("#212121"))
+                            val jetBrainsMono = ResourcesCompat.getFont(context, R.font.jetbrains_mono_medium)
+                            this.typeface = jetBrainsMono
+                            this.setEnableLineNumber(true)
+                            this.setLineNumberTextColor(Color.GRAY)
+                            this.setLineNumberTextSize(25f)
+                            this.setEnableHighlightCurrentLine(true)
+                            this.setHighlightCurrentLineColor(Color.DKGRAY)
+                            this.setTabLength(4)
+                            this.setEnableAutoIndentation(true)
+                            val languageManager = LanguageManager(context, this)
+                            languageManager.applyTheme(LanguageName.JAVA, ThemeName.MONOKAI)
+                            val codeList: List<Code> = languageManager.getLanguageCodeList(LanguageName.JAVA)
+                            val adapter = CustomCodeViewAdapter(context, codeList)
+                            this.setAdapter(adapter)
+                            val pairCompleteMap: MutableMap<Char, Char> = HashMap()
+                            pairCompleteMap['{'] = '}'
+                            pairCompleteMap['['] = ']'
+                            pairCompleteMap['('] = ')'
+                            pairCompleteMap['<'] = '>'
+                            pairCompleteMap['"'] = '"'
+                            pairCompleteMap['\''] = '\''
+                            this.setPairCompleteMap(pairCompleteMap)
+                            this.enablePairComplete(true)
+                            this.enablePairCompleteCenterCursor(true)
+                        }
                     }
-                }
-            )
-            // Сюда мы позже добавим нижнюю панель с символами
+                )
+            }
         }
-    }
+    } // <-- Вот здесь не хватало закрывающей скобки для AppTheme
 }
