@@ -23,55 +23,78 @@ class EditorViewModel : ViewModel() {
 
     private val _fileTree = MutableStateFlow<FileTreeNode?>(null)
     val fileTree = _fileTree.asStateFlow()
-
+    
     fun buildFileTreeFromUri(context: Context, rootUri: Uri) {
         viewModelScope.launch {
             _fileTree.value = null
-            val rootNode = withContext(Dispatchers.IO) {
-                try {
-                    val rootDocument = DocumentFile.fromTreeUri(context, rootUri)
-                    rootDocument?.let { buildNode(it) }
-                } catch (_: Exception) {
-                    null
-                }
+            val rootDoc = withContext(Dispatchers.IO) {
+                try { DocumentFile.fromTreeUri(context, rootUri) } catch (_: Exception) { null }
             }
-            _fileTree.value = rootNode?.copy(isExpanded = true)  // авто-раскрыть корень
+            val rootNode = rootDoc?.let {
+                FileTreeNode(
+                    name = it.name ?: "root",
+                    uri = it.uri,
+                    isDirectory = it.isDirectory,
+                    children = null,               // детей пока не грузим
+                    depth = 0,
+                    isExpanded = true,             // корень раскрыт
+                    isLoading = true               // и сразу загружаем детей
+                )
+            }
+            _fileTree.value = rootNode
+            if (rootDoc != null && rootNode != null) {
+                val children = withContext(Dispatchers.IO) { listChildren(rootDoc, 1) }
+                _fileTree.value = _fileTree.value?.copy(children = children, isLoading = false)
+            }
         }
     }
     
-    private fun buildNode(documentFile: DocumentFile, currentDepth: Int = 0): FileTreeNode {
-        val children = if (documentFile.isDirectory) {
-            documentFile.listFiles()
-                .sortedWith(compareBy<DocumentFile>({ !it.isDirectory }, { it.name ?: "" })) // null-safe
-                .mapNotNull { if (it.canRead()) buildNode(it, currentDepth + 1) else null }
-        } else {
-            emptyList()
-        }
-        return FileTreeNode(
-            name = documentFile.name ?: "unknown",
-            uri = documentFile.uri,
-            isDirectory = documentFile.isDirectory,
-            children = children,
-            depth = currentDepth
-        )
-    }
-
-    fun toggleNodeExpansion(nodeToToggle: FileTreeNode) {
-        _fileTree.value?.let { root ->
-            val newRoot = updateNodeExpansion(root, nodeToToggle.uri, !nodeToToggle.isExpanded)
-            _fileTree.value = newRoot
-        }
-    }
-
-    private fun updateNodeExpansion(currentNode: FileTreeNode, targetUri: Uri, isExpanded: Boolean): FileTreeNode {
-        if (currentNode.uri == targetUri) {
-            return currentNode.copy(isExpanded = isExpanded)
-        }
-        return currentNode.copy(
-            children = currentNode.children.map { child ->
-                updateNodeExpansion(child, targetUri, isExpanded)
+    private suspend fun listChildren(documentFile: DocumentFile, depth: Int): List<FileTreeNode> {
+        return documentFile.listFiles()
+            .sortedWith(compareBy<DocumentFile>({ !it.isDirectory }, { it.name ?: "" }))
+            .map { child ->
+                FileTreeNode(
+                    name = child.name ?: "unknown",
+                    uri = child.uri,
+                    isDirectory = child.isDirectory,
+                    children = if (child.isDirectory) null else emptyList(), // у папок дети будут лениво
+                    depth = depth,
+                    isExpanded = false,
+                    isLoading = false
+                )
             }
-        )
+    }
+    
+    private fun updateNode(
+        current: FileTreeNode,
+        targetUri: Uri,
+        transform: (FileTreeNode) -> FileTreeNode
+    ): FileTreeNode {
+        if (current.uri == targetUri) return transform(current)
+        val newChildren = current.children?.map { updateNode(it, targetUri, transform) }
+        return current.copy(children = newChildren)
+    }
+    
+    fun toggleNodeExpansion(context: Context, nodeToToggle: FileTreeNode) {
+        val expanding = !nodeToToggle.isExpanded
+        _fileTree.value?.let { root ->
+            _fileTree.value = updateNode(root, nodeToToggle.uri) { it.copy(isExpanded = expanding) }
+    
+            if (expanding && nodeToToggle.isDirectory && nodeToToggle.children == null) {
+                viewModelScope.launch {
+                    _fileTree.value = _fileTree.value?.let { r ->
+                        updateNode(r, nodeToToggle.uri) { it.copy(isLoading = true) }
+                    }
+                    val children = withContext(Dispatchers.IO) {
+                        val doc = DocumentFile.fromTreeUri(context, nodeToToggle.uri)
+                        if (doc != null) listChildren(doc, nodeToToggle.depth + 1) else emptyList()
+                    }
+                    _fileTree.value = _fileTree.value?.let { r ->
+                        updateNode(r, nodeToToggle.uri) { it.copy(children = children, isLoading = false) }
+                    }
+                }
+            }
+        }
     }
 
     fun createNewTab() {
@@ -116,6 +139,20 @@ class EditorViewModel : ViewModel() {
                     tab
                 }
             }
+        }
+    }
+    
+    fun closeTab(index: Int) {
+        val current = _tabs.value
+        if (index !in current.indices) return
+        val newList = current.toMutableList().also { it.removeAt(index) }
+        _tabs.value = newList
+        val oldActive = _activeTabIndex.value
+        _activeTabIndex.value = when {
+            newList.isEmpty() -> 0
+            index < oldActive -> oldActive - 1
+            index == oldActive -> minOf(index, newList.lastIndex)
+            else -> oldActive
         }
     }
 }

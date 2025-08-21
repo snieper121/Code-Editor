@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Folder
@@ -82,14 +83,17 @@ fun EditorScreen(
                         root = rootNode,
                         onNodeClick = { node ->
                             if (node.isDirectory) {
-                                editorViewModel.toggleNodeExpansion(node)
+                                editorViewModel.toggleNodeExpansion(context, node)
                             } else {
                                 editorViewModel.openFileTab(context, node.uri, node.name)
                                 scope.launch { scaffoldState.drawerState.close() }
                             }
                         }
                     )
-                } ?: Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                } ?: Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
                     CircularProgressIndicator()
                     Spacer(modifier = Modifier.height(8.dp))
                     Text("Загрузка дерева...")
@@ -136,17 +140,32 @@ fun EditorScreen(
             if (tabs.isNotEmpty()) {
                 ScrollableTabRow(
                     selectedTabIndex = activeTabIndex,
-                    modifier = Modifier.height(40.dp)
+                    edgePadding = 0.dp,
+                    divider = {},
+                    indicator = {},
+                    modifier = Modifier.height(36.dp)
                 ) {
                     tabs.forEachIndexed { index, tab ->
                         Tab(
                             selected = activeTabIndex == index,
                             onClick = { editorViewModel.onTabSelected(index) },
-                            text = { Text(tab.name, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                            modifier = Modifier.height(36.dp),
+                            text = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(tab.name, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 12.sp)
+                                    Spacer(Modifier.width(6.dp))
+                                    Icon(
+                                        imageVector = Icons.Filled.Close,
+                                        contentDescription = "Закрыть",
+                                        modifier = Modifier
+                                            .size(14.dp)
+                                            .clickable { editorViewModel.closeTab(index) }
+                                    )
+                                }
+                            }
                         )
                     }
                 }
-
                 val activeTab = tabs.getOrNull(activeTabIndex)
                 if (activeTab != null) {
                     CodeViewForTab(
@@ -231,12 +250,11 @@ fun FileTreeView(root: FileTreeNode, onNodeClick: (FileTreeNode) -> Unit) {
         }
     }
 }
-
 fun FileTreeNode.flatten(): List<FileTreeNode> {
     val list = mutableListOf<FileTreeNode>()
     list.add(this)
     if (this.isExpanded) {
-        this.children.forEach { child ->
+        this.children?.forEach { child ->
             list.addAll(child.flatten())
         }
     }
@@ -253,8 +271,12 @@ fun FileTreeItem(node: FileTreeNode, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         val icon: ImageVector = if (node.isDirectory) Icons.Outlined.Folder else Icons.Outlined.InsertDriveFile
-        Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(20.dp))
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(text = node.name, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (node.isLoading) {
+            CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
+            Spacer(Modifier.width(8.dp))
+        } else {
+            Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+        }
     }
 }
