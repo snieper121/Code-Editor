@@ -70,6 +70,7 @@ fun EditorScreen(
                 val fileName = it.path?.substringAfterLast('/') ?: "file"
                 val content = context.contentResolver.openInputStream(it)?.bufferedReader()?.readText() ?: ""
                 editorViewModel.openFileTab(fileName, content)
+                scope.launch { scaffoldState.drawerState.close() }
             }
         }
     )
