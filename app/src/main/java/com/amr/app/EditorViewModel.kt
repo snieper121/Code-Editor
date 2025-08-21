@@ -67,30 +67,34 @@ class EditorViewModel : ViewModel() {
     
     private fun updateNode(
         current: FileTreeNode,
-        targetUri: Uri,
+        targetId: String, // используем ID вместо URI
         transform: (FileTreeNode) -> FileTreeNode
     ): FileTreeNode {
-        if (current.uri == targetUri) return transform(current)
-        val newChildren = current.children?.map { updateNode(it, targetUri, transform) }
+        if (current.id == targetId) return transform(current)
+        val newChildren = current.children?.map { updateNode(it, targetId, transform) }
         return current.copy(children = newChildren)
     }
     
     fun toggleNodeExpansion(context: Context, nodeToToggle: FileTreeNode) {
         val expanding = !nodeToToggle.isExpanded
         _fileTree.value?.let { root ->
-            _fileTree.value = updateNode(root, nodeToToggle.uri) { it.copy(isExpanded = expanding) }
+            _fileTree.value = updateNode(root, nodeToToggle.id) { it.copy(isExpanded = expanding) }
     
             if (expanding && nodeToToggle.isDirectory && nodeToToggle.children == null) {
                 viewModelScope.launch {
                     _fileTree.value = _fileTree.value?.let { r ->
-                        updateNode(r, nodeToToggle.uri) { it.copy(isLoading = true) }
+                        updateNode(r, nodeToToggle.id) { it.copy(isLoading = true) }
                     }
                     val children = withContext(Dispatchers.IO) {
                         val doc = DocumentFile.fromTreeUri(context, nodeToToggle.uri)
-                        if (doc != null) listChildren(doc, nodeToToggle.depth + 1) else emptyList()
-                    }
-                    _fileTree.value = _fileTree.value?.let { r ->
-                        updateNode(r, nodeToToggle.uri) { it.copy(children = children, isLoading = false) }
+                        println("Loading children for node: ${nodeToToggle.name}, URI: ${nodeToToggle.uri}")
+                        if (doc != null) {
+                            println("DocumentFile found: ${doc.name}, isDirectory: ${doc.isDirectory}")
+                            listChildren(doc, nodeToToggle.depth + 1)
+                        } else {
+                            println("DocumentFile is null for URI: ${nodeToToggle.uri}")
+                            emptyList()
+                        }
                     }
                 }
             }

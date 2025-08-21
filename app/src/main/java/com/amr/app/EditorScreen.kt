@@ -282,6 +282,7 @@ fun FileTreeView(root: FileTreeNode, onNodeClick: (FileTreeNode) -> Unit) {
         }
     }
 }
+
 fun FileTreeNode.flatten(): List<FileTreeNode> {
     val list = mutableListOf<FileTreeNode>()
     list.add(this)
