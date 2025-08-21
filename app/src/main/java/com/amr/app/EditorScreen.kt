@@ -9,10 +9,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+// --- ПРАВИЛЬНЫЕ ИМПОРТЫ ---
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.InsertDriveFile
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.InsertDriveFile
+// -------------------------
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,9 +36,6 @@ import com.amrdeveloper.codeviewlibrary.syntax.LanguageName
 import com.amrdeveloper.codeviewlibrary.syntax.ThemeName
 import kotlinx.coroutines.launch
 import java.util.HashMap
-// --- ИСПРАВЛЕННЫЕ ИМПОРТЫ ---
-import androidx.compose.material.icons.outlined.Folder
-import androidx.compose.material.icons.outlined.InsertDriveFile
 
 @Composable
 fun EditorScreen(
@@ -48,12 +47,10 @@ fun EditorScreen(
     val scope = rememberCoroutineScope()
     var showMenu by remember { mutableStateOf(false) }
 
-    // Состояния из ViewModel
     val tabs by editorViewModel.tabs.collectAsState()
     val activeTabIndex by editorViewModel.activeTabIndex.collectAsState()
     val fileTree by editorViewModel.fileTree.collectAsState()
 
-    // Лаунчер для выбора папки
     val folderPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree(),
         onResult = { uri ->
@@ -68,7 +65,6 @@ fun EditorScreen(
         }
     )
 
-    // Лаунчер для выбора файла
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri ->
@@ -85,7 +81,6 @@ fun EditorScreen(
             scaffoldState = scaffoldState,
             drawerGesturesEnabled = scaffoldState.drawerState.isOpen,
             drawerContent = {
-                // Содержимое выдвижной панели (файловый менеджер)
                 Column(modifier = Modifier.fillMaxSize()) {
                     Text(
                         "Файловый менеджер",
@@ -273,7 +268,6 @@ fun FileTreeItem(node: FileTreeNode, onClick: () -> Unit) {
             .padding(start = (node.depth * 16).dp, top = 4.dp, bottom = 4.dp, end = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // --- ИСПОЛЬЗУЕМ ИКОНКИ ИЗ ПРАВИЛЬНОГО ПАКЕТА ---
         val icon: ImageVector = if (node.isDirectory) Icons.Outlined.Folder else Icons.Outlined.InsertDriveFile
         Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(20.dp))
         Spacer(modifier = Modifier.width(8.dp))
