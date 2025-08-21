@@ -51,11 +51,9 @@ fun SettingsScreen(navController: NavController) {
                 }
             )
         }
-    } // <-- Здесь тоже не хватало закрывающей скобки
+    }
 }
 
-// Вспомогательная функция теперь находится ВНЕ функции SettingsScreen
-// и видна всему файлу. Модификатор private убран.
 @Composable
 private fun SettingsItem(title: String, onClick: () -> Unit) {
     Text(
