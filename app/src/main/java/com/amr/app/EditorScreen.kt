@@ -9,12 +9,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-// --- ПРАВИЛЬНЫЕ ИМПОРТЫ ---
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.InsertDriveFile
-// -------------------------
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,6 +49,7 @@ fun EditorScreen(
     val activeTabIndex by editorViewModel.activeTabIndex.collectAsState()
     val fileTree by editorViewModel.fileTree.collectAsState()
 
+    // --- ИЗМЕНЕНИЕ: Переименовываем лаунчеры, чтобы они не конфликтовали ---
     val folderPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree(),
         onResult = { uri ->
@@ -60,12 +59,11 @@ fun EditorScreen(
                         android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                 contentResolver.takePersistableUriPermission(it, takeFlags)
                 editorViewModel.buildFileTreeFromUri(context, it)
-                scope.launch { scaffoldState.drawerState.close() }
             }
         }
     )
 
-    val filePickerLauncher = rememberLauncherForActivityResult(
+    val singleFilePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri ->
             uri?.let {
@@ -107,7 +105,9 @@ fun EditorScreen(
                 }
             },
             topBar = {
+                // --- ИЗМЕНЕНИЕ: Уменьшаем высоту TopAppBar ---
                 TopAppBar(
+                    modifier = Modifier.height(48.dp),
                     title = { Text("Code Editor") },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { scaffoldState.drawerState.open() } }) {
@@ -120,7 +120,8 @@ fun EditorScreen(
                         }
                         DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                             DropdownMenuItem(onClick = {
-                                filePickerLauncher.launch("*/*")
+                                // --- ИЗМЕНЕНИЕ: Вызываем правильный лаунчер ---
+                                singleFilePickerLauncher.launch("*/*")
                                 showMenu = false
                             }) { Text("Выбрать файл") }
 
@@ -135,16 +136,9 @@ fun EditorScreen(
                             }) { Text("Новый файл") }
 
                             Divider()
-
-                            DropdownMenuItem(onClick = { /* TODO */ ; showMenu = false }) {
-                                Text("Сохранить")
-                            }
-                            DropdownMenuItem(onClick = { /* TODO */ ; showMenu = false }) {
-                                Text("Сохранить как...")
-                            }
-
+                            DropdownMenuItem(onClick = { /* TODO */ ; showMenu = false }) { Text("Сохранить") }
+                            DropdownMenuItem(onClick = { /* TODO */ ; showMenu = false }) { Text("Сохранить как...") }
                             Divider()
-
                             DropdownMenuItem(onClick = {
                                 navController.navigate(Routes.SETTINGS)
                                 showMenu = false
@@ -156,7 +150,11 @@ fun EditorScreen(
         ) { paddingValues ->
             Column(modifier = Modifier.padding(paddingValues)) {
                 if (tabs.isNotEmpty()) {
-                    ScrollableTabRow(selectedTabIndex = activeTabIndex) {
+                    // --- ИЗМЕНЕНИЕ: Уменьшаем высоту вкладок ---
+                    ScrollableTabRow(
+                        selectedTabIndex = activeTabIndex,
+                        modifier = Modifier.height(40.dp)
+                    ) {
                         tabs.forEachIndexed { index, tab ->
                             Tab(
                                 selected = activeTabIndex == index,
