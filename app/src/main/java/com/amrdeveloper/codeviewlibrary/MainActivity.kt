@@ -49,7 +49,7 @@ fun AppEntry() {
             PermissionScreen(
                 onGoToSettingsClicked = {
                     val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
-                    intent.data = Uri.parse("package:it.com.amr.app") // Убедитесь, что package name правильный
+                    intent.data = Uri.parse("package:com.amrdeveloper.codeviewlibrary")
                     permissionLauncher.launch(intent)
                 }
             )
