@@ -278,5 +278,11 @@ fun FileTreeItem(node: FileTreeNode, onClick: () -> Unit) {
             Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
         }
+        Text(
+            text = node.name,
+            fontSize = 14.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
