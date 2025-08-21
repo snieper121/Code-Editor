@@ -1,6 +1,8 @@
 package com.amr.app
 
 import android.graphics.Color
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,6 +40,7 @@ fun EditorScreen(
     navController: NavController,
     editorViewModel: EditorViewModel = viewModel()
 ) {
+    val context = LocalContext.current
     val scaffoldState = rememberScaffoldState()
     val scope = rememberCoroutineScope()
     var showMenu by remember { mutableStateOf(false) }
@@ -44,6 +48,17 @@ fun EditorScreen(
     val tabs by editorViewModel.tabs.collectAsState()
     val activeTabIndex by editorViewModel.activeTabIndex.collectAsState()
     val fileTree by editorViewModel.fileTree.collectAsState()
+
+    // --- ВОЗВРАЩАЕМ ЛАУНЧЕР ДЛЯ ВЫБОРА ПАПКИ ---
+    val folderPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree(),
+        onResult = { uri ->
+            uri?.let {
+                editorViewModel.loadProjectFromUri(context, it)
+                scope.launch { scaffoldState.drawerState.close() }
+            }
+        }
+    )
 
     Scaffold(
         scaffoldState = scaffoldState,
@@ -69,7 +84,7 @@ fun EditorScreen(
                         }
                     )
                 } ?: Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator() // Показываем индикатор загрузки
+                    Text("Папка проекта не выбрана")
                 }
             }
         },
@@ -87,7 +102,12 @@ fun EditorScreen(
                         Icon(Icons.Default.MoreVert, contentDescription = "Действия")
                     }
                     DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                        // Меню пока упрощено, т.к. выбор папки/файла больше не нужен
+                        // --- ВОЗВРАЩАЕМ КНОПКУ ВЫБОРА ПАПКИ ---
+                        DropdownMenuItem(onClick = {
+                            folderPickerLauncher.launch(null)
+                            showMenu = false
+                        }) { Text("Выбрать папку проекта") }
+                        Divider()
                         DropdownMenuItem(onClick = {
                             editorViewModel.createNewTab()
                             showMenu = false

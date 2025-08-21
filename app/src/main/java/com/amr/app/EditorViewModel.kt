@@ -1,12 +1,12 @@
 package com.amr.app
 
-import android.os.Environment
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -23,51 +23,39 @@ class EditorViewModel : ViewModel() {
     private val _fileTree = MutableStateFlow<FileTreeNode?>(null)
     val fileTree = _fileTree.asStateFlow()
 
-    init {
-        // При старте сразу показываем корневую папку устройства
-        loadInitialDirectory()
-    }
-
-    private fun loadInitialDirectory() {
-        val rootDir = Environment.getExternalStorageDirectory()
-        buildFileTreeFromPath(rootDir)
-    }
-
-    // --- НОВАЯ БЫСТРАЯ ЛОГИКА ---
-    private fun buildFileTreeFromPath(targetFile: File) {
+    // --- НОВАЯ ЛОГИКА: Принимаем Uri, конвертируем в Path и строим дерево ---
+    fun loadProjectFromUri(context: Context, rootUri: Uri) {
         viewModelScope.launch {
-            val rootNode = withContext(Dispatchers.IO) {
-                buildNode(targetFile)
+            val rootPath = withContext(Dispatchers.IO) {
+                UriPathHelper.getPath(context, rootUri)
             }
-            _fileTree.value = rootNode
+            if (rootPath != null) {
+                val rootFile = File(rootPath)
+                val rootNode = withContext(Dispatchers.IO) {
+                    buildNode(rootFile)
+                }
+                _fileTree.value = rootNode
+            } else {
+                // Обработка ошибки, если путь не удалось получить
+            }
         }
     }
 
     private fun buildNode(file: File, currentDepth: Int = 0): FileTreeNode {
         val children = if (file.isDirectory) {
-            // ЗАГРУЖАЕМ ТОЛЬКО ТЕКУЩИЙ УРОВЕНЬ! (Lazy loading)
             file.listFiles()?.sortedWith(compareBy({ !it.isDirectory }, { it.name }))
                 ?.map {
-                    // Для дочерних элементов не загружаем их детей сразу
                     FileTreeNode(
-                        path = it.path,
-                        name = it.name,
-                        isDirectory = it.isDirectory,
-                        children = emptyList(), // Дети будут загружены при нажатии
-                        depth = currentDepth + 1,
-                        isExpanded = false
+                        path = it.path, name = it.name, isDirectory = it.isDirectory,
+                        children = emptyList(), depth = currentDepth + 1, isExpanded = false
                     )
                 } ?: emptyList()
         } else {
             emptyList()
         }
         return FileTreeNode(
-            path = file.path,
-            name = file.name,
-            isDirectory = file.isDirectory,
-            children = children,
-            depth = currentDepth,
-            isExpanded = true // Корневой узел всегда "раскрыт"
+            path = file.path, name = file.name, isDirectory = file.isDirectory,
+            children = children, depth = currentDepth, isExpanded = true
         )
     }
 
@@ -82,12 +70,9 @@ class EditorViewModel : ViewModel() {
 
     private fun updateNodeExpansion(currentNode: FileTreeNode, targetPath: String): FileTreeNode {
         if (currentNode.path == targetPath) {
-            // Если мы нашли узел, который нужно раскрыть/свернуть
             return if (currentNode.isExpanded) {
-                // Сворачиваем: просто удаляем детей
                 currentNode.copy(isExpanded = false, children = emptyList())
             } else {
-                // Раскрываем: загружаем детей с диска
                 val file = File(currentNode.path)
                 val children = file.listFiles()
                     ?.sortedWith(compareBy({ !it.isDirectory }, { it.name }))
@@ -100,8 +85,6 @@ class EditorViewModel : ViewModel() {
                 currentNode.copy(isExpanded = true, children = children)
             }
         }
-
-        // Рекурсивно ищем узел в дочерних элементах
         return currentNode.copy(
             children = currentNode.children.map { child ->
                 updateNodeExpansion(child, targetPath)
