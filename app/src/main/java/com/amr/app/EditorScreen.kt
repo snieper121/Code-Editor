@@ -121,13 +121,12 @@ fun EditorScreen(
                         }
                         DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                             DropdownMenuItem(onClick = {
-                                // --- ИЗМЕНЕНИЕ: Вызываем правильный лаунчер ---
                                 singleFilePickerLauncher.launch("*/*")
                                 showMenu = false
                             }) { Text("Выбрать файл") }
 
                             DropdownMenuItem(onClick = {
-                                directoryPickerLauncher.launch(null)
+                                folderPickerLauncher.launch(null)
                                 showMenu = false
                             }) { Text("Выбрать папку") }
 
@@ -240,12 +239,30 @@ fun CodeViewForTab(content: String, onContentChange: (String) -> Unit) {
 
 @Composable
 fun FileTreeView(root: FileTreeNode, onNodeClick: (FileTreeNode) -> Unit) {
+    // --- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ ЗДЕСЬ ---
+    // Мы вычисляем плоский список внутри `remember`.
+    // `key1 = root` означает, что этот блок кода будет выполняться заново
+    // каждый раз, когда объект `root` (наше дерево) изменяется.
+    val flattenedTree = remember(root) {
+        root.flatten()
+    }
+
+    LazyColumn {
+        // Используем уже вычисленный и актуальный список
+        items(flattenedTree) { node ->
+            FileTreeItem(node = node, onClick = { onNodeClick(node) })
+        }
+    }
+}
+/*
+@Composable
+fun FileTreeView(root: FileTreeNode, onNodeClick: (FileTreeNode) -> Unit) {
     LazyColumn {
         items(root.flatten()) { node ->
             FileTreeItem(node = node, onClick = { onNodeClick(node) })
         }
     }
-}
+}*/
 
 fun FileTreeNode.flatten(): List<FileTreeNode> {
     val list = mutableListOf<FileTreeNode>()
