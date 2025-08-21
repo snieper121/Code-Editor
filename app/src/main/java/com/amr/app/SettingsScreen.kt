@@ -1,13 +1,13 @@
 package com.amr.app
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -47,7 +47,7 @@ private fun SettingsItem(title: String, onClick: () -> Unit) {
     )
 }
 
-// --- ЭКРАНЫ-ЗАГЛУШКИ ---
+// --- ВСЕ ЭКРАНЫ-ЗАГЛУШКИ ЖИВУТ ЗДЕСЬ, В ОДНОМ ФАЙЛЕ ---
 @Composable fun EditorSettingsScreen(navController: NavController) { Text("Экран настроек редактора") }
 @Composable fun AppSettingsScreen(navController: NavController) { Text("Экран настроек приложения") }
 @Composable fun TerminalSettingsScreen(navController: NavController) { Text("Экран настроек терминала") }
