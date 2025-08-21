@@ -7,9 +7,13 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.amr.app.AppSettingsScreen
 import com.amr.app.EditorScreen
+import com.amr.app.EditorSettingsScreen
+import com.amr.app.FormatterSettingsScreen
 import com.amr.app.Routes
 import com.amr.app.SettingsScreen
+import com.amr.app.TerminalSettingsScreen
 import com.amr.app.theme.AppTheme
 
 class MainActivity : ComponentActivity() {
@@ -29,6 +33,11 @@ fun MainAppNavigation() {
     NavHost(navController = navController, startDestination = Routes.EDITOR) {
         composable(Routes.EDITOR) { EditorScreen(navController) }
         composable(Routes.SETTINGS) { SettingsScreen(navController) }
+        
+        // --- РЕГИСТРИРУЕМ ВСЕ ЭКРАНЫ-ЗАГЛУШКИ ---
+        composable(Routes.EDITOR_SETTINGS) { EditorSettingsScreen(navController) }
+        composable(Routes.APP_SETTINGS) { AppSettingsScreen(navController) }
+        composable(Routes.TERMINAL_SETTINGS) { TerminalSettingsScreen(navController) }
+        composable(Routes.FORMATTER_SETTINGS) { FormatterSettingsScreen(navController) }
     }
 }
-

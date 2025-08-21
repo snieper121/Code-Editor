@@ -32,7 +32,6 @@ import com.amrdeveloper.codeviewlibrary.syntax.LanguageManager
 import com.amrdeveloper.codeviewlibrary.syntax.LanguageName
 import com.amrdeveloper.codeviewlibrary.syntax.ThemeName
 import kotlinx.coroutines.launch
-import java.io.File
 import java.util.HashMap
 
 @Composable
@@ -49,13 +48,13 @@ fun EditorScreen(
     val activeTabIndex by editorViewModel.activeTabIndex.collectAsState()
     val fileTree by editorViewModel.fileTree.collectAsState()
 
-    // --- ВОЗВРАЩАЕМ ЛАУНЧЕР ДЛЯ ВЫБОРА ПАПКИ ---
     val folderPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree(),
         onResult = { uri ->
             uri?.let {
-                editorViewModel.loadProjectFromUri(context, it)
-                scope.launch { scaffoldState.drawerState.close() }
+                val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                context.contentResolver.takePersistableUriPermission(it, takeFlags)
+                editorViewModel.buildFileTreeFromUri(context, it)
             }
         }
     )
@@ -78,7 +77,7 @@ fun EditorScreen(
                             if (node.isDirectory) {
                                 editorViewModel.toggleNodeExpansion(node)
                             } else {
-                                editorViewModel.openFile(File(node.path))
+                                editorViewModel.openFileTab(context, node.uri, node.name)
                                 scope.launch { scaffoldState.drawerState.close() }
                             }
                         }
@@ -102,7 +101,6 @@ fun EditorScreen(
                         Icon(Icons.Default.MoreVert, contentDescription = "Действия")
                     }
                     DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                        // --- ВОЗВРАЩАЕМ КНОПКУ ВЫБОРА ПАПКИ ---
                         DropdownMenuItem(onClick = {
                             folderPickerLauncher.launch(null)
                             showMenu = false
@@ -214,16 +212,11 @@ fun CodeViewForTab(content: String, onContentChange: (String) -> Unit) {
 
 @Composable
 fun FileTreeView(root: FileTreeNode, onNodeClick: (FileTreeNode) -> Unit) {
-    // --- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ ЗДЕСЬ ---
-    // Мы вычисляем плоский список внутри `remember`.
-    // `key1 = root` означает, что этот блок кода будет выполняться заново
-    // каждый раз, когда объект `root` (наше дерево) изменяется.
     val flattenedTree = remember(root) {
         root.flatten()
     }
 
     LazyColumn {
-        // Используем уже вычисленный и актуальный список
         items(flattenedTree) { node ->
             FileTreeItem(node = node, onClick = { onNodeClick(node) })
         }
@@ -256,39 +249,3 @@ fun FileTreeItem(node: FileTreeNode, onClick: () -> Unit) {
         Text(text = node.name, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
-/*
-import android.graphics.Color
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.outlined.Folder
-import androidx.compose.material.icons.outlined.InsertDriveFile
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.res.ResourcesCompat
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
-import com.amr.app.theme.AppTheme
-import com.amrdeveloper.codeview.Code
-import com.amrdeveloper.codeviewlibrary.CustomCodeViewAdapter
-import com.amrdeveloper.codeviewlibrary.R
-import com.amrdeveloper.codeviewlibrary.syntax.LanguageManager
-import com.amrdeveloper.codeviewlibrary.syntax.LanguageName
-import com.amrdeveloper.codeviewlibrary.syntax.ThemeName
-import kotlinx.coroutines.launch
-import java.util.HashMap
-*/

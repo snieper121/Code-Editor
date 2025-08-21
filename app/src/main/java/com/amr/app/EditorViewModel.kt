@@ -2,15 +2,15 @@ package com.amr.app
 
 import android.content.Context
 import android.net.Uri
+import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.flow.update
-import java.io.File
 import java.util.UUID
 
 class EditorViewModel : ViewModel() {
@@ -24,76 +24,52 @@ class EditorViewModel : ViewModel() {
     private val _fileTree = MutableStateFlow<FileTreeNode?>(null)
     val fileTree = _fileTree.asStateFlow()
 
-    // --- НОВАЯ ЛОГИКА: Принимаем Uri, конвертируем в Path и строим дерево ---
-    fun loadProjectFromUri(context: Context, rootUri: Uri) {
+    fun buildFileTreeFromUri(context: Context, rootUri: Uri) {
         viewModelScope.launch {
-            val rootPath = withContext(Dispatchers.IO) {
-                UriPathHelper.getPath(context, rootUri)
+            _fileTree.value = null // Показываем состояние загрузки
+            val rootNode = withContext(Dispatchers.IO) {
+                val rootDocument = DocumentFile.fromTreeUri(context, rootUri)
+                rootDocument?.let { buildNode(it) }
             }
-            if (rootPath != null) {
-                val rootFile = File(rootPath)
-                val rootNode = withContext(Dispatchers.IO) {
-                    buildNode(rootFile)
-                }
-                _fileTree.value = rootNode
-            } else {
-                // Обработка ошибки, если путь не удалось получить
-            }
+            _fileTree.value = rootNode
         }
     }
 
-    private fun buildNode(file: File, currentDepth: Int = 0): FileTreeNode {
-        val children = if (file.isDirectory) {
-            file.listFiles()?.sortedWith(compareBy({ !it.isDirectory }, { it.name }))
-                ?.map {
-                    FileTreeNode(
-                        path = it.path, name = it.name, isDirectory = it.isDirectory,
-                        children = emptyList(), depth = currentDepth + 1, isExpanded = false
-                    )
-                } ?: emptyList()
+    private fun buildNode(documentFile: DocumentFile, currentDepth: Int = 0): FileTreeNode {
+        val children = if (documentFile.isDirectory) {
+            documentFile.listFiles()
+                .sortedWith(compareBy({ !it.isDirectory }, { it.name }))
+                .mapNotNull { if (it.canRead()) buildNode(it, currentDepth + 1) else null }
         } else {
             emptyList()
         }
         return FileTreeNode(
-            path = file.path, name = file.name, isDirectory = file.isDirectory,
-            children = children, depth = currentDepth, isExpanded = true
+            name = documentFile.name ?: "unknown",
+            uri = documentFile.uri,
+            isDirectory = documentFile.isDirectory,
+            children = children,
+            depth = currentDepth
         )
     }
 
     fun toggleNodeExpansion(nodeToToggle: FileTreeNode) {
-        viewModelScope.launch {
-            val newRoot = withContext(Dispatchers.IO) {
-                updateNodeExpansion(_fileTree.value!!, nodeToToggle.path)
-            }
+        _fileTree.value?.let { root ->
+            val newRoot = updateNodeExpansion(root, nodeToToggle.uri, !nodeToToggle.isExpanded)
             _fileTree.value = newRoot
         }
     }
 
-    private fun updateNodeExpansion(currentNode: FileTreeNode, targetPath: String): FileTreeNode {
-        if (currentNode.path == targetPath) {
-            return if (currentNode.isExpanded) {
-                currentNode.copy(isExpanded = false, children = emptyList())
-            } else {
-                val file = File(currentNode.path)
-                val children = file.listFiles()
-                    ?.sortedWith(compareBy({ !it.isDirectory }, { it.name }))
-                    ?.map {
-                        FileTreeNode(
-                            path = it.path, name = it.name, isDirectory = it.isDirectory,
-                            children = emptyList(), depth = currentNode.depth + 1, isExpanded = false
-                        )
-                    } ?: emptyList()
-                currentNode.copy(isExpanded = true, children = children)
-            }
+    private fun updateNodeExpansion(currentNode: FileTreeNode, targetUri: Uri, isExpanded: Boolean): FileTreeNode {
+        if (currentNode.uri == targetUri) {
+            return currentNode.copy(isExpanded = isExpanded)
         }
         return currentNode.copy(
             children = currentNode.children.map { child ->
-                updateNodeExpansion(child, targetPath)
+                updateNodeExpansion(child, targetUri, isExpanded)
             }
         )
     }
 
-    // --- Функции для вкладок ---
     fun createNewTab() {
         val newTab = FileTab(name = "new $newFileCounter.txt", content = "")
         _tabs.update { it + newTab }
@@ -101,18 +77,24 @@ class EditorViewModel : ViewModel() {
         newFileCounter++
     }
 
-    fun openFile(file: File) {
+    fun openFileTab(context: Context, fileUri: Uri, fileName: String) {
         viewModelScope.launch {
             val content = withContext(Dispatchers.IO) {
-                try { file.readText() } catch (e: Exception) { e.message ?: "Error reading file" }
+                try {
+                    context.contentResolver.openInputStream(fileUri)?.bufferedReader()?.readText()
+                } catch (e: Exception) {
+                    e.message ?: "Error reading file"
+                }
             }
-            val existingTabIndex = _tabs.value.indexOfFirst { it.path == file.path }
-            if (existingTabIndex != -1) {
-                _activeTabIndex.value = existingTabIndex
-            } else {
-                val newTab = FileTab(path = file.path, name = file.name, content = content)
-                _tabs.update { it + newTab }
-                _activeTabIndex.value = _tabs.value.lastIndex
+            if (content != null) {
+                val existingTabIndex = _tabs.value.indexOfFirst { it.uri == fileUri }
+                if (existingTabIndex != -1) {
+                    _activeTabIndex.value = existingTabIndex
+                } else {
+                    val newTab = FileTab(uri = fileUri, name = fileName, content = content)
+                    _tabs.update { it + newTab }
+                    _activeTabIndex.value = _tabs.value.lastIndex
+                }
             }
         }
     }
