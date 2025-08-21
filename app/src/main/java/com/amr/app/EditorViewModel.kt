@@ -26,19 +26,23 @@ class EditorViewModel : ViewModel() {
 
     fun buildFileTreeFromUri(context: Context, rootUri: Uri) {
         viewModelScope.launch {
-            _fileTree.value = null // Показываем состояние загрузки
+            _fileTree.value = null
             val rootNode = withContext(Dispatchers.IO) {
-                val rootDocument = DocumentFile.fromTreeUri(context, rootUri)
-                rootDocument?.let { buildNode(it) }
+                try {
+                    val rootDocument = DocumentFile.fromTreeUri(context, rootUri)
+                    rootDocument?.let { buildNode(it) }
+                } catch (_: Exception) {
+                    null
+                }
             }
-            _fileTree.value = rootNode
+            _fileTree.value = rootNode?.copy(isExpanded = true)  // авто-раскрыть корень
         }
     }
-
+    
     private fun buildNode(documentFile: DocumentFile, currentDepth: Int = 0): FileTreeNode {
         val children = if (documentFile.isDirectory) {
             documentFile.listFiles()
-                .sortedWith(compareBy({ !it.isDirectory }, { it.name }))
+                .sortedWith(compareBy<DocumentFile>({ !it.isDirectory }, { it.name ?: "" })) // null-safe
                 .mapNotNull { if (it.canRead()) buildNode(it, currentDepth + 1) else null }
         } else {
             emptyList()

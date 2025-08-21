@@ -8,12 +8,16 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 
 @Composable
 fun SettingsScreen(navController: NavController) {
+    var showAbout by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -31,8 +35,19 @@ fun SettingsScreen(navController: NavController) {
             item { SettingsItem("Настройки приложения") { navController.navigate(Routes.APP_SETTINGS) } }
             item { SettingsItem("Настройки терминала") { navController.navigate(Routes.TERMINAL_SETTINGS) } }
             item { SettingsItem("Форматтер языков") { navController.navigate(Routes.FORMATTER_SETTINGS) } }
-            item { SettingsItem("О приложении") { /* TODO: Show dialog */ } }
+            item { SettingsItem("О приложении") { showAbout = true } }
         }
+    }
+
+    if (showAbout) {
+        AlertDialog(
+            onDismissRequest = { showAbout = false },
+            title = { Text("О приложении") },
+            text = { Text("Code Editor — экспериментальный редактор кода на Jetpack Compose.") },
+            confirmButton = {
+                TextButton(onClick = { showAbout = false }) { Text("OK") }
+            }
+        )
     }
 }
 
@@ -47,7 +62,6 @@ private fun SettingsItem(title: String, onClick: () -> Unit) {
     )
 }
 
-// --- ВСЕ ЭКРАНЫ-ЗАГЛУШКИ ЖИВУТ ЗДЕСЬ, В ОДНОМ ФАЙЛЕ ---
 @Composable fun EditorSettingsScreen(navController: NavController) { Text("Экран настроек редактора") }
 @Composable fun AppSettingsScreen(navController: NavController) { Text("Экран настроек приложения") }
 @Composable fun TerminalSettingsScreen(navController: NavController) { Text("Экран настроек терминала") }
