@@ -3,7 +3,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.amrdeveloper.codeviewlibrary">
 
-    <!-- 1. ЗАПРАШИВАЕМ НОВОЕ РАЗРЕШЕНИЕ НА ПОЛНЫЙ ДОСТУП -->
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
         tools:ignore="ScopedStorage" />
 
@@ -14,7 +13,6 @@
         android:roundIcon="@mipmap/ic_cv_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
-        <!-- 2. РАЗРЕШАЕМ ИСПОЛЬЗОВАТЬ СТАРОЕ ФАЙЛОВОЕ API -->
         android:requestLegacyExternalStorage="true">
 
         <activity
