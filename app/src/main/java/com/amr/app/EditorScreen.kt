@@ -1,8 +1,6 @@
 package com.amr.app
 
 import android.graphics.Color
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,7 +15,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,7 +22,6 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.res.ResourcesCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.amr.app.theme.AppTheme
 import com.amrdeveloper.codeview.Code
 import com.amrdeveloper.codeviewlibrary.CustomCodeViewAdapter
 import com.amrdeveloper.codeviewlibrary.R
@@ -33,6 +29,7 @@ import com.amrdeveloper.codeviewlibrary.syntax.LanguageManager
 import com.amrdeveloper.codeviewlibrary.syntax.LanguageName
 import com.amrdeveloper.codeviewlibrary.syntax.ThemeName
 import kotlinx.coroutines.launch
+import java.io.File
 import java.util.HashMap
 
 @Composable
@@ -40,7 +37,6 @@ fun EditorScreen(
     navController: NavController,
     editorViewModel: EditorViewModel = viewModel()
 ) {
-    val context = LocalContext.current
     val scaffoldState = rememberScaffoldState()
     val scope = rememberCoroutineScope()
     var showMenu by remember { mutableStateOf(false) }
@@ -49,134 +45,93 @@ fun EditorScreen(
     val activeTabIndex by editorViewModel.activeTabIndex.collectAsState()
     val fileTree by editorViewModel.fileTree.collectAsState()
 
-    // --- ИЗМЕНЕНИЕ: Переименовываем лаунчеры, чтобы они не конфликтовали ---
-    val folderPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree(),
-        onResult = { uri ->
-            uri?.let {
-                val contentResolver = context.contentResolver
-                val takeFlags: Int = android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or
-                        android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                contentResolver.takePersistableUriPermission(it, takeFlags)
-                editorViewModel.buildFileTreeFromUri(context, it)
-            }
-        }
-    )
-
-    val singleFilePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent(),
-        onResult = { uri ->
-            uri?.let {
-                val fileName = it.path?.substringAfterLast('/') ?: "file"
-                val content = context.contentResolver.openInputStream(it)?.bufferedReader()?.readText() ?: ""
-                editorViewModel.openFileTab(fileName, content)
-                scope.launch { scaffoldState.drawerState.close() }
-            }
-        }
-    )
-
-    AppTheme {
-        Scaffold(
-            scaffoldState = scaffoldState,
-            drawerGesturesEnabled = scaffoldState.drawerState.isOpen,
-            drawerContent = {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    Text(
-                        "Файловый менеджер",
-                        style = MaterialTheme.typography.h6,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                    Divider()
-                    fileTree?.let { rootNode ->
-                        FileTreeView(
-                            root = rootNode,
-                            onNodeClick = { node ->
-                                if (node.isDirectory) {
-                                    editorViewModel.toggleNodeExpansion(node)
-                                } else {
-                                    val content = context.contentResolver.openInputStream(node.uri)?.bufferedReader()?.readText() ?: ""
-                                    editorViewModel.openFileTab(node.name, content)
-                                    scope.launch { scaffoldState.drawerState.close() }
-                                }
+    Scaffold(
+        scaffoldState = scaffoldState,
+        drawerGesturesEnabled = scaffoldState.drawerState.isOpen,
+        drawerContent = {
+            Column(modifier = Modifier.fillMaxSize()) {
+                Text(
+                    "Файловый менеджер",
+                    style = MaterialTheme.typography.h6,
+                    modifier = Modifier.padding(16.dp)
+                )
+                Divider()
+                fileTree?.let { rootNode ->
+                    FileTreeView(
+                        root = rootNode,
+                        onNodeClick = { node ->
+                            if (node.isDirectory) {
+                                editorViewModel.toggleNodeExpansion(node)
+                            } else {
+                                editorViewModel.openFile(File(node.path))
+                                scope.launch { scaffoldState.drawerState.close() }
                             }
-                        )
-                    } ?: Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Папка не выбрана")
+                        }
+                    )
+                } ?: Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator() // Показываем индикатор загрузки
+                }
+            }
+        },
+        topBar = {
+            TopAppBar(
+                modifier = Modifier.height(48.dp),
+                title = { Text("Code Editor") },
+                navigationIcon = {
+                    IconButton(onClick = { scope.launch { scaffoldState.drawerState.open() } }) {
+                        Icon(Icons.Default.Menu, contentDescription = "Файловый менеджер")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { showMenu = !showMenu }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Действия")
+                    }
+                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                        // Меню пока упрощено, т.к. выбор папки/файла больше не нужен
+                        DropdownMenuItem(onClick = {
+                            editorViewModel.createNewTab()
+                            showMenu = false
+                        }) { Text("Новый файл") }
+                        Divider()
+                        DropdownMenuItem(onClick = { /* TODO */ ; showMenu = false }) { Text("Сохранить") }
+                        DropdownMenuItem(onClick = { /* TODO */ ; showMenu = false }) { Text("Сохранить как...") }
+                        Divider()
+                        DropdownMenuItem(onClick = {
+                            navController.navigate(Routes.SETTINGS)
+                            showMenu = false
+                        }) { Text("Настройки") }
                     }
                 }
-            },
-            topBar = {
-                // --- ИЗМЕНЕНИЕ: Уменьшаем высоту TopAppBar ---
-                TopAppBar(
-                    modifier = Modifier.height(48.dp),
-                    title = { Text("Code Editor") },
-                    navigationIcon = {
-                        IconButton(onClick = { scope.launch { scaffoldState.drawerState.open() } }) {
-                            Icon(Icons.Default.Menu, contentDescription = "Файловый менеджер")
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = { showMenu = !showMenu }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "Действия")
-                        }
-                        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                            DropdownMenuItem(onClick = {
-                                singleFilePickerLauncher.launch("*/*")
-                                showMenu = false
-                            }) { Text("Выбрать файл") }
-
-                            DropdownMenuItem(onClick = {
-                                folderPickerLauncher.launch(null)
-                                showMenu = false
-                            }) { Text("Выбрать папку") }
-
-                            DropdownMenuItem(onClick = {
-                                editorViewModel.createNewTab()
-                                showMenu = false
-                            }) { Text("Новый файл") }
-
-                            Divider()
-                            DropdownMenuItem(onClick = { /* TODO */ ; showMenu = false }) { Text("Сохранить") }
-                            DropdownMenuItem(onClick = { /* TODO */ ; showMenu = false }) { Text("Сохранить как...") }
-                            Divider()
-                            DropdownMenuItem(onClick = {
-                                navController.navigate(Routes.SETTINGS)
-                                showMenu = false
-                            }) { Text("Настройки") }
-                        }
-                    }
-                )
-            }
-        ) { paddingValues ->
-            Column(modifier = Modifier.padding(paddingValues)) {
-                if (tabs.isNotEmpty()) {
-                    // --- ИЗМЕНЕНИЕ: Уменьшаем высоту вкладок ---
-                    ScrollableTabRow(
-                        selectedTabIndex = activeTabIndex,
-                        modifier = Modifier.height(40.dp)
-                    ) {
-                        tabs.forEachIndexed { index, tab ->
-                            Tab(
-                                selected = activeTabIndex == index,
-                                onClick = { editorViewModel.onTabSelected(index) },
-                                text = { Text(tab.name, maxLines = 1, overflow = TextOverflow.Ellipsis) }
-                            )
-                        }
-                    }
-
-                    val activeTab = tabs.getOrNull(activeTabIndex)
-                    if (activeTab != null) {
-                        CodeViewForTab(
-                            content = activeTab.content,
-                            onContentChange = { newContent ->
-                                editorViewModel.onContentChanged(newContent)
-                            }
+            )
+        }
+    ) { paddingValues ->
+        Column(modifier = Modifier.padding(paddingValues)) {
+            if (tabs.isNotEmpty()) {
+                ScrollableTabRow(
+                    selectedTabIndex = activeTabIndex,
+                    modifier = Modifier.height(40.dp)
+                ) {
+                    tabs.forEachIndexed { index, tab ->
+                        Tab(
+                            selected = activeTabIndex == index,
+                            onClick = { editorViewModel.onTabSelected(index) },
+                            text = { Text(tab.name, maxLines = 1, overflow = TextOverflow.Ellipsis) }
                         )
                     }
-                } else {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Нет открытых файлов. Создайте новый или выберите существующий.")
-                    }
+                }
+
+                val activeTab = tabs.getOrNull(activeTabIndex)
+                if (activeTab != null) {
+                    CodeViewForTab(
+                        content = activeTab.content,
+                        onContentChange = { newContent ->
+                            editorViewModel.onContentChanged(newContent)
+                        }
+                    )
+                }
+            } else {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Нет открытых файлов. Создайте новый или выберите существующий.")
                 }
             }
         }
@@ -254,15 +209,6 @@ fun FileTreeView(root: FileTreeNode, onNodeClick: (FileTreeNode) -> Unit) {
         }
     }
 }
-/*
-@Composable
-fun FileTreeView(root: FileTreeNode, onNodeClick: (FileTreeNode) -> Unit) {
-    LazyColumn {
-        items(root.flatten()) { node ->
-            FileTreeItem(node = node, onClick = { onNodeClick(node) })
-        }
-    }
-}*/
 
 fun FileTreeNode.flatten(): List<FileTreeNode> {
     val list = mutableListOf<FileTreeNode>()
@@ -290,3 +236,39 @@ fun FileTreeItem(node: FileTreeNode, onClick: () -> Unit) {
         Text(text = node.name, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
+/*
+import android.graphics.Color
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.InsertDriveFile
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.res.ResourcesCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import com.amr.app.theme.AppTheme
+import com.amrdeveloper.codeview.Code
+import com.amrdeveloper.codeviewlibrary.CustomCodeViewAdapter
+import com.amrdeveloper.codeviewlibrary.R
+import com.amrdeveloper.codeviewlibrary.syntax.LanguageManager
+import com.amrdeveloper.codeviewlibrary.syntax.LanguageName
+import com.amrdeveloper.codeviewlibrary.syntax.ThemeName
+import kotlinx.coroutines.launch
+import java.util.HashMap
+*/

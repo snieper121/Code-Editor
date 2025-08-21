@@ -1,10 +1,10 @@
 package com.amr.app
 
-import android.net.Uri
 import java.util.UUID
 
 data class FileTab(
-    val id: String = UUID.randomUUID().toString(), // Уникальный ID для каждой вкладки
+    val id: String = UUID.randomUUID().toString(),
+    val path: String? = null, // Путь к файлу, если он есть
     val name: String,
     val content: String
 )

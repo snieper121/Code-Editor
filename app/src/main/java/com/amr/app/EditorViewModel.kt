@@ -1,8 +1,6 @@
 package com.amr.app
 
-import android.content.Context
-import android.net.Uri
-import androidx.documentfile.provider.DocumentFile
+import android.os.Environment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -11,6 +9,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
+import java.util.UUID
 
 class EditorViewModel : ViewModel() {
     private var newFileCounter = 1
@@ -23,72 +23,113 @@ class EditorViewModel : ViewModel() {
     private val _fileTree = MutableStateFlow<FileTreeNode?>(null)
     val fileTree = _fileTree.asStateFlow()
 
-    // --- ИЗМЕНЕНИЕ: Запускаем сканирование в фоновом потоке ---
-    fun buildFileTreeFromUri(context: Context, rootUri: Uri) {
+    init {
+        // При старте сразу показываем корневую папку устройства
+        loadInitialDirectory()
+    }
+
+    private fun loadInitialDirectory() {
+        val rootDir = Environment.getExternalStorageDirectory()
+        buildFileTreeFromPath(rootDir)
+    }
+
+    // --- НОВАЯ БЫСТРАЯ ЛОГИКА ---
+    private fun buildFileTreeFromPath(targetFile: File) {
         viewModelScope.launch {
-            // Показываем состояние загрузки (пока просто очищаем старое дерево)
-            _fileTree.value = null
-            // Переключаемся на фоновый поток для I/O операций
             val rootNode = withContext(Dispatchers.IO) {
-                val rootDocument = DocumentFile.fromTreeUri(context, rootUri)
-                rootDocument?.let { buildNode(it) }
+                buildNode(targetFile)
             }
-            // Возвращаемся в главный поток для обновления UI
             _fileTree.value = rootNode
         }
     }
 
-    private fun buildNode(documentFile: DocumentFile, currentDepth: Int = 0): FileTreeNode {
-        val children = if (documentFile.isDirectory) {
-            documentFile.listFiles()
-                .sortedWith(compareBy({ !it.isDirectory }, { it.name }))
-                .mapNotNull { if (it.canRead()) buildNode(it, currentDepth + 1) else null }
+    private fun buildNode(file: File, currentDepth: Int = 0): FileTreeNode {
+        val children = if (file.isDirectory) {
+            // ЗАГРУЖАЕМ ТОЛЬКО ТЕКУЩИЙ УРОВЕНЬ! (Lazy loading)
+            file.listFiles()?.sortedWith(compareBy({ !it.isDirectory }, { it.name }))
+                ?.map {
+                    // Для дочерних элементов не загружаем их детей сразу
+                    FileTreeNode(
+                        path = it.path,
+                        name = it.name,
+                        isDirectory = it.isDirectory,
+                        children = emptyList(), // Дети будут загружены при нажатии
+                        depth = currentDepth + 1,
+                        isExpanded = false
+                    )
+                } ?: emptyList()
         } else {
             emptyList()
         }
         return FileTreeNode(
-            name = documentFile.name ?: "unknown",
-            uri = documentFile.uri,
-            isDirectory = documentFile.isDirectory,
+            path = file.path,
+            name = file.name,
+            isDirectory = file.isDirectory,
             children = children,
-            depth = currentDepth
+            depth = currentDepth,
+            isExpanded = true // Корневой узел всегда "раскрыт"
         )
     }
 
     fun toggleNodeExpansion(nodeToToggle: FileTreeNode) {
-        _fileTree.value?.let { root ->
-            val newRoot = updateNodeExpansion(root, nodeToToggle.uri, !nodeToToggle.isExpanded)
+        viewModelScope.launch {
+            val newRoot = withContext(Dispatchers.IO) {
+                updateNodeExpansion(_fileTree.value!!, nodeToToggle.path)
+            }
             _fileTree.value = newRoot
         }
     }
 
-    private fun updateNodeExpansion(currentNode: FileTreeNode, targetUri: Uri, isExpanded: Boolean): FileTreeNode {
-        if (currentNode.uri == targetUri) {
-            return currentNode.copy(isExpanded = isExpanded)
+    private fun updateNodeExpansion(currentNode: FileTreeNode, targetPath: String): FileTreeNode {
+        if (currentNode.path == targetPath) {
+            // Если мы нашли узел, который нужно раскрыть/свернуть
+            return if (currentNode.isExpanded) {
+                // Сворачиваем: просто удаляем детей
+                currentNode.copy(isExpanded = false, children = emptyList())
+            } else {
+                // Раскрываем: загружаем детей с диска
+                val file = File(currentNode.path)
+                val children = file.listFiles()
+                    ?.sortedWith(compareBy({ !it.isDirectory }, { it.name }))
+                    ?.map {
+                        FileTreeNode(
+                            path = it.path, name = it.name, isDirectory = it.isDirectory,
+                            children = emptyList(), depth = currentNode.depth + 1, isExpanded = false
+                        )
+                    } ?: emptyList()
+                currentNode.copy(isExpanded = true, children = children)
+            }
         }
+
+        // Рекурсивно ищем узел в дочерних элементах
         return currentNode.copy(
             children = currentNode.children.map { child ->
-                updateNodeExpansion(child, targetUri, isExpanded)
+                updateNodeExpansion(child, targetPath)
             }
         )
     }
 
-    // --- Функции для вкладок (без изменений) ---
+    // --- Функции для вкладок ---
     fun createNewTab() {
-        val newTab = FileTab(name = "new $newFileCounter", content = "")
+        val newTab = FileTab(name = "new $newFileCounter.txt", content = "")
         _tabs.update { it + newTab }
         _activeTabIndex.value = _tabs.value.lastIndex
         newFileCounter++
     }
 
-    fun openFileTab(fileName: String, fileContent: String) {
-        val existingTabIndex = _tabs.value.indexOfFirst { it.name == fileName }
-        if (existingTabIndex != -1) {
-            _activeTabIndex.value = existingTabIndex
-        } else {
-            val newTab = FileTab(name = fileName, content = fileContent)
-            _tabs.update { it + newTab }
-            _activeTabIndex.value = _tabs.value.lastIndex
+    fun openFile(file: File) {
+        viewModelScope.launch {
+            val content = withContext(Dispatchers.IO) {
+                try { file.readText() } catch (e: Exception) { e.message ?: "Error reading file" }
+            }
+            val existingTabIndex = _tabs.value.indexOfFirst { it.path == file.path }
+            if (existingTabIndex != -1) {
+                _activeTabIndex.value = existingTabIndex
+            } else {
+                val newTab = FileTab(path = file.path, name = file.name, content = content)
+                _tabs.update { it + newTab }
+                _activeTabIndex.value = _tabs.value.lastIndex
+            }
         }
     }
 
