@@ -9,8 +9,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Folder
@@ -36,6 +34,9 @@ import com.amrdeveloper.codeviewlibrary.syntax.LanguageName
 import com.amrdeveloper.codeviewlibrary.syntax.ThemeName
 import kotlinx.coroutines.launch
 import java.util.HashMap
+// --- ИСПРАВЛЕННЫЕ ИМПОРТЫ ---
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.InsertDriveFile
 
 @Composable
 fun EditorScreen(
@@ -272,7 +273,8 @@ fun FileTreeItem(node: FileTreeNode, onClick: () -> Unit) {
             .padding(start = (node.depth * 16).dp, top = 4.dp, bottom = 4.dp, end = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        val icon: ImageVector = if (node.isDirectory) Icons.Default.Folder else Icons.Default.InsertDriveFile
+        // --- ИСПОЛЬЗУЕМ ИКОНКИ ИЗ ПРАВИЛЬНОГО ПАКЕТА ---
+        val icon: ImageVector = if (node.isDirectory) Icons.Outlined.Folder else Icons.Outlined.InsertDriveFile
         Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(20.dp))
         Spacer(modifier = Modifier.width(8.dp))
         Text(text = node.name, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
