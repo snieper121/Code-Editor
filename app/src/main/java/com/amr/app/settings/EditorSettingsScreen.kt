@@ -30,7 +30,7 @@ fun EditorSettingsScreen(navController: NavController, vm: SettingsViewModel = v
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(Modifier.height(16.dp))
-            Text("Масштаб редактора: ${String.format(\"%.2f\", vm.editorScale.value)}x")
+            Text("Масштаб редактора: ${"%.2f".format(vm.editorScale.value)}x")
             Slider(
                 value = vm.editorScale.value,
                 onValueChange = { vm.setEditorScale(it) },
@@ -38,6 +38,7 @@ fun EditorSettingsScreen(navController: NavController, vm: SettingsViewModel = v
                 steps = 12,
                 modifier = Modifier.fillMaxWidth()
             )
+
             Spacer(Modifier.height(16.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Номера строк")
