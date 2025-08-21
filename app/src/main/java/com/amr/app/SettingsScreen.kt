@@ -63,8 +63,3 @@ private fun SettingsItem(title: String, onClick: () -> Unit) {
             .padding(16.dp)
     )
 }
-
-@Composable fun EditorSettingsScreen(navController: NavController) { Text("Экран настроек редактора") }
-@Composable fun AppSettingsScreen(navController: NavController) { Text("Экран настроек приложения") }
-@Composable fun TerminalSettingsScreen(navController: NavController) { Text("Экран настроек терминала") }
-@Composable fun FormatterSettingsScreen(navController: NavController) { Text("Экран настроек форматтера") }

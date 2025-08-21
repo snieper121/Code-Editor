@@ -7,14 +7,14 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.amr.app.AppSettingsScreen
 import com.amr.app.EditorScreen
-import com.amr.app.EditorSettingsScreen
-import com.amr.app.FormatterSettingsScreen
 import com.amr.app.Routes
 import com.amr.app.SettingsScreen
-import com.amr.app.TerminalSettingsScreen
 import com.amr.app.theme.AppTheme
+import com.amr.app.settings.EditorSettingsScreen
+import com.amr.app.settings.AppSettingsScreen
+import com.amr.app.settings.TerminalSettingsScreen
+import com.amr.app.settings.FormatterSettingsScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

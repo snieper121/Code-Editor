@@ -1,5 +1,6 @@
 package com.amr.app
 
+import android.util.TypedValue
 import android.graphics.Color
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -21,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -38,11 +40,19 @@ import com.amrdeveloper.codeviewlibrary.syntax.ThemeName
 import kotlinx.coroutines.launch
 import java.util.HashMap
 
+import com.amr.app.settings.SettingsViewModel
+
 @Composable
 fun EditorScreen(
     navController: NavController,
     editorViewModel: EditorViewModel = viewModel()
 ) {
+    val settingsVm: SettingsViewModel = viewModel()
+    val fontSizeSp by settingsVm.editorFontSizeSp.collectAsState()
+    val editorScale by settingsVm.editorScale.collectAsState()
+    val showLineNumbers by settingsVm.editorLineNumbers.collectAsState()
+    val highlightLine by settingsVm.editorHighlightLine.collectAsState()
+    
     val context = LocalContext.current
     val scaffoldState = rememberScaffoldState()
     val scope = rememberCoroutineScope()
@@ -171,21 +181,30 @@ fun EditorScreen(
                     CodeViewForTab(
                         content = activeTab.content,
                         onContentChange = { newContent ->
-                            editorViewModel.onContentChanged(newContent)
-                        }
+                            editorViewModel.onContentChanged(newContent) },
+                        fontSizeSp = fontSizeSp,
+                        editorScale = editorScale,
+                        showLineNumbers = showLineNumbers,
+                        highlightLine = highlightLine
                     )
                 }
             } else {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Нет открытых файлов. Создайте новый или выберите существующий.")
+                    Text("        Нет открытых файлов.         Создайте новый или выберите существующий.")
                 }
             }
         }
     }
 }
-
 @Composable
-fun CodeViewForTab(content: String, onContentChange: (String) -> Unit) {
+fun CodeViewForTab(
+    content: String,
+    onContentChange: (String) -> Unit,
+    fontSizeSp: Float,
+    editorScale: Float,
+    showLineNumbers: Boolean,
+    highlightLine: Boolean
+) {
     val codeViewRef = remember { mutableStateOf<com.amrdeveloper.codeview.CodeView?>(null) }
 
     LaunchedEffect(content) {
@@ -196,19 +215,26 @@ fun CodeViewForTab(content: String, onContentChange: (String) -> Unit) {
     }
 
     AndroidView(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .graphicsLayer(scaleX = editorScale, scaleY = editorScale),
         factory = { context ->
             com.amrdeveloper.codeview.CodeView(context).apply {
                 setBackgroundColor(Color.parseColor("#212121"))
                 val jetBrainsMono = ResourcesCompat.getFont(context, R.font.jetbrains_mono_medium)
                 this.typeface = jetBrainsMono
-                this.setEnableLineNumber(true)
+
+                this.setEnableLineNumber(showLineNumbers)
                 this.setLineNumberTextColor(Color.GRAY)
-                this.setLineNumberTextSize(25f)
-                this.setEnableHighlightCurrentLine(true)
+                this.setLineNumberTextSize((fontSizeSp * 1.2f))
+
+                this.setEnableHighlightCurrentLine(highlightLine)
                 this.setHighlightCurrentLineColor(Color.DKGRAY)
+
                 this.setTabLength(4)
                 this.setEnableAutoIndentation(true)
+                // размер шрифта редактора
+                this.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSizeSp)
                 val languageManager = LanguageManager(context, this)
                 languageManager.applyTheme(LanguageName.JAVA, ThemeName.MONOKAI)
                 val codeList: List<Code> = languageManager.getLanguageCodeList(LanguageName.JAVA)
@@ -234,6 +260,12 @@ fun CodeViewForTab(content: String, onContentChange: (String) -> Unit) {
                 })
                 codeViewRef.value = this
             }
+        },
+        update = { view ->
+            view.setEnableLineNumber(showLineNumbers)
+            view.setEnableHighlightCurrentLine(highlightLine)
+            view.setLineNumberTextSize((fontSizeSp * 1.2f))
+            view.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSizeSp)
         }
     )
 }
