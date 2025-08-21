@@ -1,11 +1,10 @@
 package com.amr.app
 
 import android.net.Uri
+import java.util.UUID
 
-// Этот класс описывает одну вкладку
 data class FileTab(
-    val id: Int, // Уникальный идентификатор
-    val name: String, // Имя файла, например, "Untitled-1" или "build.gradle"
-    var content: String, // Текущее содержимое файла
-    val uri: Uri? = null // Ссылка на реальный файл на диске (null для новых файлов)
+    val id: String = UUID.randomUUID().toString(), // Уникальный ID для каждой вкладки
+    val name: String,
+    val content: String
 )
