@@ -127,7 +127,7 @@ fun EditorScreen(
                             }) { Text("Выбрать файл") }
 
                             DropdownMenuItem(onClick = {
-                                folderPickerLauncher.launch(null)
+                                directoryPickerLauncher.launch(null)
                                 showMenu = false
                             }) { Text("Выбрать папку") }
 
