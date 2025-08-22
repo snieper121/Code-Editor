@@ -291,7 +291,7 @@ fun CodeViewForTab(
                             // Задержка перед активацией курсора
                             android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                                 this.requestFocus()
-                            }, vm.editorTouchDelay.value.toLong())
+                            }, settingsVm.editorTouchDelay.value.toLong())
                             true
                         }
                         else -> false
