@@ -217,7 +217,6 @@ fun EditorScreen(
         }
     }
 }
-
 @Composable
 fun CodeViewForTab(
     content: String,
@@ -237,16 +236,16 @@ fun CodeViewForTab(
     }
     
     AndroidView(
-        modifier = Modifier.fillMaxSize(), // убрать graphicsLayer отсюда
+        modifier = Modifier.fillMaxSize(),
         factory = { context ->
             com.amrdeveloper.codeview.CodeView(context).apply {
                 setBackgroundColor(Color.parseColor("#212121"))
                 val jetBrainsMono = ResourcesCompat.getFont(context, R.font.jetbrains_mono_medium)
                 this.typeface = jetBrainsMono
                 
-                // Применяем масштаб к самому CodeView
-                this.scaleX = editorScale
-                this.scaleY = editorScale
+                // НЕ применяем масштаб к CodeView - это ломает скроллинг
+                // this.scaleX = editorScale
+                // this.scaleY = editorScale
                 
                 this.setEnableLineNumber(showLineNumbers)
                 this.setLineNumberTextColor(Color.GRAY)
@@ -258,8 +257,19 @@ fun CodeViewForTab(
                 this.setTabLength(4)
                 this.setEnableAutoIndentation(true)
                 
-                // размер шрифта редактора в пикселях
-                this.setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSizePx.toFloat())
+                // Применяем масштаб через размер шрифта
+                val scaledFontSize = (fontSizePx * editorScale).toInt()
+                this.setTextSize(TypedValue.COMPLEX_UNIT_PX, scaledFontSize.toFloat())
+                
+                // Настройки скроллинга
+                this.isHorizontalScrollBarEnabled = true
+                this.isVerticalScrollBarEnabled = true
+                this.isScrollContainer = true
+                
+                // Отключаем автоматическое выделение при скролле
+                this.isLongClickable = false
+                this.isClickable = true
+                
                 val languageManager = LanguageManager(context, this)
                 languageManager.applyTheme(LanguageName.JAVA, ThemeName.MONOKAI)
                 val codeList: List<Code> = languageManager.getLanguageCodeList(LanguageName.JAVA)
@@ -275,7 +285,18 @@ fun CodeViewForTab(
                 this.setPairCompleteMap(pairCompleteMap)
                 this.enablePairComplete(true)
                 this.enablePairCompleteCenterCursor(true)
-
+                this.setOnTouchListener { _, event ->
+                    when (event.action) {
+                        android.view.MotionEvent.ACTION_DOWN -> {
+                            // Задержка перед активацией курсора
+                            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                                this.requestFocus()
+                            }, vm.editorTouchDelay.value.toLong())
+                            true
+                        }
+                        else -> false
+                    }
+                }
                 addTextChangedListener(object : android.text.TextWatcher {
                     override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
                     override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -290,10 +311,14 @@ fun CodeViewForTab(
             view.setEnableLineNumber(showLineNumbers)
             view.setEnableHighlightCurrentLine(highlightLine)
             view.setLineNumberTextSize((fontSizePx * 1.2f))
-            view.setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSizePx.toFloat())
-            // Обновляем масштаб
-            view.scaleX = editorScale
-            view.scaleY = editorScale
+            
+            // Применяем масштаб через размер шрифта
+            val scaledFontSize = (fontSizePx * editorScale).toInt()
+            view.setTextSize(TypedValue.COMPLEX_UNIT_PX, scaledFontSize.toFloat())
+            
+            // НЕ обновляем scaleX/scaleY
+            // view.scaleX = editorScale
+            // view.scaleY = editorScale
         }
     )
 }

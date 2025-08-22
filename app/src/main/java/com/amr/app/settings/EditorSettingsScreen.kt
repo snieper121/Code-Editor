@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Check
 fun EditorSettingsScreen(navController: NavController, vm: SettingsViewModel = viewModel()) {
     var fontSizeText by remember { mutableStateOf(vm.editorFontSizePx.value.toString()) }
     var scaleText by remember { mutableStateOf(String.format("%.1f", vm.editorScale.value)) }
+    var touchDelayText by remember { mutableStateOf(vm.editorTouchDelay.value.toString()) }
     
     Scaffold(
         topBar = {
@@ -69,6 +70,24 @@ fun EditorSettingsScreen(navController: NavController, vm: SettingsViewModel = v
             }
             
             item {
+                Text("Задержка касания (мс)", style = MaterialTheme.typography.h6)
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = touchDelayText,
+                    onValueChange = { 
+                        touchDelayText = it
+                        it.toIntOrNull()?.let { delay ->
+                            if (delay in 100..2000) vm.setEditorTouchDelay(delay)
+                        }
+                    },
+                    label = { Text("Задержка перед активацией курсора") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                Spacer(Modifier.height(16.dp))
+            }
+            
+            item {
                 Text("Дополнительные настройки", style = MaterialTheme.typography.h6)
                 Spacer(Modifier.height(8.dp))
             }
@@ -103,5 +122,9 @@ fun EditorSettingsScreen(navController: NavController, vm: SettingsViewModel = v
     
     LaunchedEffect(vm.editorScale.value) {
         scaleText = String.format("%.1f", vm.editorScale.value)
+    }
+    
+    LaunchedEffect(vm.editorTouchDelay.value) {
+        touchDelayText = vm.editorTouchDelay.value.toString()
     }
 }

@@ -13,10 +13,11 @@ private val Context.dataStore by preferencesDataStore(name = "settings")
 
 object SettingsKeys {
     val EDITOR_FONT_SIZE_SP = floatPreferencesKey("editor_font_size_sp")
-    val EDITOR_FONT_SIZE_PX = intPreferencesKey("editor_font_size_px") // новый
+    val EDITOR_FONT_SIZE_PX = intPreferencesKey("editor_font_size_px")
     val EDITOR_SCALE = floatPreferencesKey("editor_scale")
     val EDITOR_LINE_NUMBERS = booleanPreferencesKey("editor_line_numbers")
     val EDITOR_HIGHLIGHT_LINE = booleanPreferencesKey("editor_highlight_line")
+    val EDITOR_TOUCH_DELAY = intPreferencesKey("editor_touch_delay") // новая настройка
 }
 
 class SettingsRepository(private val context: Context) {
@@ -38,6 +39,13 @@ class SettingsRepository(private val context: Context) {
 
     val editorHighlightLine: Flow<Boolean> =
         context.dataStore.data.map { it[SettingsKeys.EDITOR_HIGHLIGHT_LINE] ?: true }
+
+    val editorTouchDelay: Flow<Int> =
+        context.dataStore.data.map { it[SettingsKeys.EDITOR_TOUCH_DELAY] ?: 500 }
+    
+    suspend fun setEditorTouchDelay(value: Int) {
+        context.dataStore.edit { it[SettingsKeys.EDITOR_TOUCH_DELAY] = value }
+    }
 
     suspend fun setEditorFontSizeSp(value: Float) {
         context.dataStore.edit { it[SettingsKeys.EDITOR_FONT_SIZE_SP] = value }
