@@ -12,9 +12,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
+import com.amr.app.file.FileManager
 
 class EditorViewModel : ViewModel() {
     private var newFileCounter = 1
+    private var fileManager: FileManager? = null
 
     private val _tabs = MutableStateFlow<List<FileTab>>(emptyList())
     val tabs = _tabs.asStateFlow()
@@ -25,71 +27,50 @@ class EditorViewModel : ViewModel() {
     val fileTree = _fileTree.asStateFlow()
     
     fun buildFileTreeFromUri(context: Context, rootUri: Uri) {
+        fileManager = FileManager(context)
         viewModelScope.launch {
             _fileTree.value = null
-            val rootDoc = withContext(Dispatchers.IO) {
-                try { DocumentFile.fromTreeUri(context, rootUri) } catch (_: Exception) { null }
-            }
+            val rootDoc = fileManager?.getRootDocument(rootUri)
             val rootNode = rootDoc?.let {
                 FileTreeNode(
                     name = it.name ?: "root",
                     uri = it.uri,
+                    documentFile = it,
                     isDirectory = it.isDirectory,
-                    children = null,               // детей пока не грузим
+                    children = null,
                     depth = 0,
-                    isExpanded = true,             // корень раскрыт
-                    isLoading = true               // и сразу загружаем детей
+                    isExpanded = true,
+                    isLoading = true
                 )
             }
             _fileTree.value = rootNode
+            
             if (rootDoc != null && rootNode != null) {
-                val children = withContext(Dispatchers.IO) { listChildren(rootDoc, 1) }
+                val children = loadChildren(rootDoc, 1)
                 _fileTree.value = _fileTree.value?.copy(children = children, isLoading = false)
             }
         }
     }
-
-/*    private suspend fun listChildren(documentFile: DocumentFile, depth: Int): List<FileTreeNode> {
-        return documentFile.listFiles()
-            .sortedWith(compareBy<DocumentFile>({ !it.isDirectory }, { it.name ?: "" }))
-            .map { child ->
-                FileTreeNode(
-                    name = child.name ?: "unknown",
-                    uri = child.uri,
-                    isDirectory = child.isDirectory,
-                    children = if (child.isDirectory) null else emptyList(), // у папок дети будут лениво
-                    depth = depth,
-                    isExpanded = false,
-                    isLoading = false
-                )
-            }
-    }*/
-
-    private suspend fun listChildren(documentFile: DocumentFile, depth: Int): List<FileTreeNode> {
-        println("Loading children for: ${documentFile.name} at depth $depth")
-        val files = documentFile.listFiles()
-        println("Found ${files.size} items")
-        
-        return files
-            .sortedWith(compareBy<DocumentFile>({ !it.isDirectory }, { it.name ?: "" }))
-            .map { child ->
-                println("  - ${child.name} (${if (child.isDirectory) "dir" else "file"})")
-                FileTreeNode(
-                    name = child.name ?: "unknown",
-                    uri = child.uri,
-                    isDirectory = child.isDirectory,
-                    children = if (child.isDirectory) null else emptyList(),
-                    depth = depth,
-                    isExpanded = false,
-                    isLoading = false
-                )
-            }
-    }
     
+    private suspend fun loadChildren(document: DocumentFile, depth: Int): List<FileTreeNode> {
+        val files = fileManager?.listChildren(document) ?: emptyList()
+        return files.map { child ->
+            FileTreeNode(
+                name = child.name ?: "unknown",
+                uri = child.uri,
+                documentFile = child,
+                isDirectory = child.isDirectory,
+                children = if (child.isDirectory) null else emptyList(),
+                depth = depth,
+                isExpanded = false,
+                isLoading = false
+            )
+        }
+    }
     
     private fun updateNode(
         current: FileTreeNode,
-        targetId: String, // используем ID вместо URI
+        targetId: String,
         transform: (FileTreeNode) -> FileTreeNode
     ): FileTreeNode {
         if (current.id == targetId) return transform(current)
@@ -100,37 +81,26 @@ class EditorViewModel : ViewModel() {
     fun toggleNodeExpansion(context: Context, nodeToToggle: FileTreeNode) {
         val expanding = !nodeToToggle.isExpanded
         _fileTree.value?.let { root ->
-            // Сначала обновляем состояние разворачивания
             _fileTree.value = updateNode(root, nodeToToggle.id) { it.copy(isExpanded = expanding) }
-    
-            // Если разворачиваем папку и у неё нет детей
+
             if (expanding && nodeToToggle.isDirectory && nodeToToggle.children == null) {
                 viewModelScope.launch {
                     try {
-                        // Устанавливаем состояние загрузки
                         _fileTree.value = _fileTree.value?.let { r ->
                             updateNode(r, nodeToToggle.id) { it.copy(isLoading = true) }
                         }
                         
-                        // Загружаем детей ТОЛЬКО для этой папки
-                        val children = withContext(Dispatchers.IO) {
-                            val doc = DocumentFile.fromTreeUri(context, nodeToToggle.uri)
-                            if (doc != null && doc.isDirectory) {
-                                // Важно: загружаем детей именно этой папки, а не корня
-                                listChildren(doc, nodeToToggle.depth + 1)
-                            } else {
-                                emptyList()
-                            }
-                        }
+                        // Используем сохранённый DocumentFile вместо создания нового
+                        val children = nodeToToggle.documentFile?.let { doc ->
+                            loadChildren(doc, nodeToToggle.depth + 1)
+                        } ?: emptyList()
                         
-                        // Обновляем с детьми и убираем загрузку
                         _fileTree.value = _fileTree.value?.let { r ->
                             updateNode(r, nodeToToggle.id) { 
                                 it.copy(children = children, isLoading = false) 
                             }
                         }
                     } catch (e: Exception) {
-                        // В случае ошибки убираем загрузку и оставляем пустой список
                         _fileTree.value = _fileTree.value?.let { r ->
                             updateNode(r, nodeToToggle.id) { 
                                 it.copy(children = emptyList(), isLoading = false) 
@@ -151,13 +121,7 @@ class EditorViewModel : ViewModel() {
 
     fun openFileTab(context: Context, fileUri: Uri, fileName: String) {
         viewModelScope.launch {
-            val content = withContext(Dispatchers.IO) {
-                try {
-                    context.contentResolver.openInputStream(fileUri)?.bufferedReader()?.readText()
-                } catch (e: Exception) {
-                    e.message ?: "Error reading file"
-                }
-            }
+            val content = fileManager?.readFileContent(fileUri)
             if (content != null) {
                 val existingTabIndex = _tabs.value.indexOfFirst { it.uri == fileUri }
                 if (existingTabIndex != -1) {

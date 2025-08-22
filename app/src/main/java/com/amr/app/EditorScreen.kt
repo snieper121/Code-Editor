@@ -69,10 +69,13 @@ fun EditorScreen(
                 try {
                     val takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                     context.contentResolver.takePersistableUriPermission(it, takeFlags)
-                } catch (_: SecurityException) {
-                    // игнорируем: доступ уже может быть выдан или среда вернула меньшие флаги
+                    editorViewModel.buildFileTreeFromUri(context, it)
+                } catch (e: SecurityException) {
+                    // Можно показать Snackbar с ошибкой
+                    println("Permission error: ${e.message}")
+                } catch (e: Exception) {
+                    println("Error opening folder: ${e.message}")
                 }
-                editorViewModel.buildFileTreeFromUri(context, it)
             }
         }
     )
@@ -162,14 +165,21 @@ fun EditorScreen(
                             modifier = Modifier.height(36.dp),
                             text = {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(tab.name, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 12.sp)
+                                    Text(
+                                        tab.name, 
+                                        maxLines = 1, 
+                                        overflow = TextOverflow.Ellipsis, 
+                                        fontSize = 12.sp
+                                    )
                                     Spacer(Modifier.width(6.dp))
                                     Icon(
                                         imageVector = Icons.Filled.Close,
                                         contentDescription = "Закрыть",
                                         modifier = Modifier
                                             .size(14.dp)
-                                            .clickable { editorViewModel.closeTab(index) }
+                                            .clickable { 
+                                                editorViewModel.closeTab(index)
+                                            }
                                     )
                                 }
                             }
@@ -189,8 +199,19 @@ fun EditorScreen(
                     )
                 }
             } else {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("        Нет открытых файлов.         Создайте новый или выберите существующий.")
+                Box(
+                    modifier = Modifier.fillMaxSize(), 
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Нет открытых файлов")
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "Создайте новый или выберите существующий",
+                            style = MaterialTheme.typography.caption,
+                            color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
                 }
             }
         }
@@ -216,14 +237,17 @@ fun CodeViewForTab(
     }
     
     AndroidView(
-        modifier = Modifier
-            .fillMaxSize()
-            .graphicsLayer(scaleX = editorScale, scaleY = editorScale),
+        modifier = Modifier.fillMaxSize(), // убрать graphicsLayer отсюда
         factory = { context ->
             com.amrdeveloper.codeview.CodeView(context).apply {
                 setBackgroundColor(Color.parseColor("#212121"))
                 val jetBrainsMono = ResourcesCompat.getFont(context, R.font.jetbrains_mono_medium)
                 this.typeface = jetBrainsMono
+                
+                // Применяем масштаб к самому CodeView
+                this.scaleX = editorScale
+                this.scaleY = editorScale
+                
                 this.setEnableLineNumber(showLineNumbers)
                 this.setLineNumberTextColor(Color.GRAY)
                 this.setLineNumberTextSize((fontSizePx * 1.2f))
@@ -267,13 +291,16 @@ fun CodeViewForTab(
             view.setEnableHighlightCurrentLine(highlightLine)
             view.setLineNumberTextSize((fontSizePx * 1.2f))
             view.setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSizePx.toFloat())
+            // Обновляем масштаб
+            view.scaleX = editorScale
+            view.scaleY = editorScale
         }
     )
 }
 
 @Composable
 fun FileTreeView(root: FileTreeNode, onNodeClick: (FileTreeNode) -> Unit) {
-    val flattenedTree = remember(root) {
+    val flattenedTree = remember(root, root.isExpanded, root.children) {
         root.flatten()
     }
 
