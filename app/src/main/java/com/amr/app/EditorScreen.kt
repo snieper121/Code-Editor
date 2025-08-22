@@ -52,7 +52,8 @@ fun EditorScreen(
     val editorScale by settingsVm.editorScale.collectAsState()
     val showLineNumbers by settingsVm.editorLineNumbers.collectAsState()
     val highlightLine by settingsVm.editorHighlightLine.collectAsState()
-    
+    val touchDelayMs by settingsVm.editorTouchDelay.collectAsState() // добавить эту строку
+
     val context = LocalContext.current
     val scaffoldState = rememberScaffoldState()
     val scope = rememberCoroutineScope()
@@ -195,7 +196,8 @@ fun EditorScreen(
                         fontSizePx = fontSizePx,
                         editorScale = editorScale,
                         showLineNumbers = showLineNumbers,
-                        highlightLine = highlightLine
+                        highlightLine = highlightLine,
+                        touchDelayMs = touchDelayMs
                     )
                 }
             } else {
@@ -224,7 +226,8 @@ fun CodeViewForTab(
     fontSizePx: Int,
     editorScale: Float,
     showLineNumbers: Boolean,
-    highlightLine: Boolean
+    highlightLine: Boolean,
+    touchDelayMs: Int
 ) {
     val codeViewRef = remember { mutableStateOf<com.amrdeveloper.codeview.CodeView?>(null) }
 
@@ -285,17 +288,11 @@ fun CodeViewForTab(
                 this.setPairCompleteMap(pairCompleteMap)
                 this.enablePairComplete(true)
                 this.enablePairCompleteCenterCursor(true)
-                this.setOnTouchListener { _, event ->
-                    when (event.action) {
-                        android.view.MotionEvent.ACTION_DOWN -> {
-                            // Задержка перед активацией курсора
-                            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                                this.requestFocus()
-                            }, settingsVm.editorTouchDelay.value.toLong())
-                            true
-                        }
-                        else -> false
-                    }
+                this.setOnClickListener {
+                    // Простая задержка перед фокусом
+                    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                        this.requestFocus()
+                    }, touchDelayMs.toLong())
                 }
                 addTextChangedListener(object : android.text.TextWatcher {
                     override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -322,7 +319,6 @@ fun CodeViewForTab(
         }
     )
 }
-
 @Composable
 fun FileTreeView(root: FileTreeNode, onNodeClick: (FileTreeNode) -> Unit) {
     val flattenedTree = remember(root, root.isExpanded, root.children) {
