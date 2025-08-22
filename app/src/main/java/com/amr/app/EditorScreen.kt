@@ -48,7 +48,7 @@ fun EditorScreen(
     editorViewModel: EditorViewModel = viewModel()
 ) {
     val settingsVm: SettingsViewModel = viewModel()
-    val fontSizeSp by settingsVm.editorFontSizeSp.collectAsState()
+    val fontSizePx by settingsVm.editorFontSizePx.collectAsState()
     val editorScale by settingsVm.editorScale.collectAsState()
     val showLineNumbers by settingsVm.editorLineNumbers.collectAsState()
     val highlightLine by settingsVm.editorHighlightLine.collectAsState()
@@ -182,7 +182,7 @@ fun EditorScreen(
                         content = activeTab.content,
                         onContentChange = { newContent ->
                             editorViewModel.onContentChanged(newContent) },
-                        fontSizeSp = fontSizeSp,
+                        fontSizePx = fontSizePx,
                         editorScale = editorScale,
                         showLineNumbers = showLineNumbers,
                         highlightLine = highlightLine
@@ -196,11 +196,12 @@ fun EditorScreen(
         }
     }
 }
+
 @Composable
 fun CodeViewForTab(
     content: String,
     onContentChange: (String) -> Unit,
-    fontSizeSp: Float,
+    fontSizePx: Int,
     editorScale: Float,
     showLineNumbers: Boolean,
     highlightLine: Boolean
@@ -213,7 +214,7 @@ fun CodeViewForTab(
             view.setText(content)
         }
     }
-
+    
     AndroidView(
         modifier = Modifier
             .fillMaxSize()
@@ -223,18 +224,18 @@ fun CodeViewForTab(
                 setBackgroundColor(Color.parseColor("#212121"))
                 val jetBrainsMono = ResourcesCompat.getFont(context, R.font.jetbrains_mono_medium)
                 this.typeface = jetBrainsMono
-
                 this.setEnableLineNumber(showLineNumbers)
                 this.setLineNumberTextColor(Color.GRAY)
-                this.setLineNumberTextSize((fontSizeSp * 1.2f))
+                this.setLineNumberTextSize((fontSizePx * 1.2f))
 
                 this.setEnableHighlightCurrentLine(highlightLine)
                 this.setHighlightCurrentLineColor(Color.DKGRAY)
 
                 this.setTabLength(4)
                 this.setEnableAutoIndentation(true)
-                // размер шрифта редактора
-                this.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSizeSp)
+                
+                // размер шрифта редактора в пикселях
+                this.setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSizePx.toFloat())
                 val languageManager = LanguageManager(context, this)
                 languageManager.applyTheme(LanguageName.JAVA, ThemeName.MONOKAI)
                 val codeList: List<Code> = languageManager.getLanguageCodeList(LanguageName.JAVA)
@@ -264,8 +265,8 @@ fun CodeViewForTab(
         update = { view ->
             view.setEnableLineNumber(showLineNumbers)
             view.setEnableHighlightCurrentLine(highlightLine)
-            view.setLineNumberTextSize((fontSizeSp * 1.2f))
-            view.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSizeSp)
+            view.setLineNumberTextSize((fontSizePx * 1.2f))
+            view.setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSizePx.toFloat())
         }
     )
 }

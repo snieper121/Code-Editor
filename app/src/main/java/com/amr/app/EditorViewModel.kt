@@ -78,22 +78,39 @@ class EditorViewModel : ViewModel() {
     fun toggleNodeExpansion(context: Context, nodeToToggle: FileTreeNode) {
         val expanding = !nodeToToggle.isExpanded
         _fileTree.value?.let { root ->
+            // Сначала обновляем состояние разворачивания
             _fileTree.value = updateNode(root, nodeToToggle.id) { it.copy(isExpanded = expanding) }
-    
+            // Если разворачиваем папку и у неё нет детей
             if (expanding && nodeToToggle.isDirectory && nodeToToggle.children == null) {
                 viewModelScope.launch {
-                    _fileTree.value = _fileTree.value?.let { r ->
-                        updateNode(r, nodeToToggle.id) { it.copy(isLoading = true) }
-                    }
-                    val children = withContext(Dispatchers.IO) {
-                        val doc = DocumentFile.fromTreeUri(context, nodeToToggle.uri)
-                        println("Loading children for node: ${nodeToToggle.name}, URI: ${nodeToToggle.uri}")
-                        if (doc != null) {
-                            println("DocumentFile found: ${doc.name}, isDirectory: ${doc.isDirectory}")
-                            listChildren(doc, nodeToToggle.depth + 1)
-                        } else {
-                            println("DocumentFile is null for URI: ${nodeToToggle.uri}")
-                            emptyList()
+                    try {
+                        // Устанавливаем состояние загрузки
+                        _fileTree.value = _fileTree.value?.let { r ->
+                            updateNode(r, nodeToToggle.id) { it.copy(isLoading = true) }
+                        }
+                        
+                        // Загружаем детей
+                        val children = withContext(Dispatchers.IO) {
+                            val doc = DocumentFile.fromTreeUri(context, nodeToToggle.uri)
+                            if (doc != null && doc.isDirectory) {
+                                listChildren(doc, nodeToToggle.depth + 1)
+                            } else {
+                                emptyList()
+                            }
+                        }
+                        
+                        // Обновляем с детьми и убираем загрузку
+                        _fileTree.value = _fileTree.value?.let { r ->
+                            updateNode(r, nodeToToggle.id) { 
+                                it.copy(children = children, isLoading = false) 
+                            }
+                        }
+                    } catch (e: Exception) {
+                        // В случае ошибки убираем загрузку и оставляем пустой список
+                        _fileTree.value = _fileTree.value?.let { r ->
+                            updateNode(r, nodeToToggle.id) { 
+                                it.copy(children = emptyList(), isLoading = false) 
+                            }
                         }
                     }
                 }

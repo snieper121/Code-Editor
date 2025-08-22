@@ -14,7 +14,9 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     val editorScale = repo.editorScale.stateIn(viewModelScope, SharingStarted.Eagerly, 1.0f)
     val editorLineNumbers = repo.editorLineNumbers.stateIn(viewModelScope, SharingStarted.Eagerly, true)
     val editorHighlightLine = repo.editorHighlightLine.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val editorFontSizePx = repo.editorFontSizePx.stateIn(viewModelScope, SharingStarted.Eagerly, 16)
 
+    fun setEditorFontSizePx(value: Int) = viewModelScope.launch { repo.setEditorFontSizePx(value) }
     fun setEditorFontSizeSp(value: Float) = viewModelScope.launch { repo.setEditorFontSizeSp(value) }
     fun setEditorScale(value: Float) = viewModelScope.launch { repo.setEditorScale(value) }
     fun setEditorLineNumbers(enabled: Boolean) = viewModelScope.launch { repo.setEditorLineNumbers(enabled) }

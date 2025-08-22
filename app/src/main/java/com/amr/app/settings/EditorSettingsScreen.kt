@@ -1,6 +1,8 @@
 package com.amr.app.settings
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -9,44 +11,94 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 
 @Composable
 fun EditorSettingsScreen(navController: NavController, vm: SettingsViewModel = viewModel()) {
+    val fontSizeOptions = listOf(12, 14, 16, 18, 20, 22, 24, 26, 28, 30)
+    val scaleOptions = listOf(0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f)
+    
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Настройки редактора") },
-                navigationIcon = { IconButton(onClick = { navController.navigateUp() }) { Icon(Icons.Default.ArrowBack, null) } }
+                navigationIcon = { 
+                    IconButton(onClick = { navController.navigateUp() }) { 
+                        Icon(Icons.Default.ArrowBack, null) 
+                    } 
+                }
             )
         }
     ) { padding ->
-        Column(Modifier.padding(padding).padding(16.dp)) {
-            Text("Размер шрифта: ${vm.editorFontSizeSp.value.toInt()} sp")
-            Slider(
-                value = vm.editorFontSizeSp.value,
-                onValueChange = { vm.setEditorFontSizeSp(it) },
-                valueRange = 10f..24f,
-                steps = 14,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(Modifier.height(16.dp))
-            Text("Масштаб редактора: ${"%.2f".format(vm.editorScale.value)}x")
-            Slider(
-                value = vm.editorScale.value,
-                onValueChange = { vm.setEditorScale(it) },
-                valueRange = 0.8f..1.4f,
-                steps = 12,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(Modifier.height(16.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Номера строк")
-                Switch(checked = vm.editorLineNumbers.value, onCheckedChange = { vm.setEditorLineNumbers(it) })
+        LazyColumn(Modifier.padding(padding).padding(16.dp)) {
+            item {
+                Text("Размер шрифта", style = MaterialTheme.typography.h6)
+                Spacer(Modifier.height(8.dp))
             }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Подсветка текущей строки")
-                Switch(checked = vm.editorHighlightLine.value, onCheckedChange = { vm.setEditorHighlightLine(it) })
+            
+            items(fontSizeOptions) { size ->
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable { vm.setEditorFontSizePx(size) }
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("${size}px")
+                    if (vm.editorFontSizePx.value == size) {
+                        Icon(Icons.Default.Check, contentDescription = "Выбрано")
+                    }
+                }
+                Divider()
+            }
+            
+            item {
+                Spacer(Modifier.height(16.dp))
+                Text("Масштаб редактора", style = MaterialTheme.typography.h6)
+                Spacer(Modifier.height(8.dp))
+            }
+            
+            items(scaleOptions) { scale ->
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable { vm.setEditorScale(scale) }
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("${String.format("%.1f", scale)}x")
+                    if (vm.editorScale.value == scale) {
+                        Icon(Icons.Default.Check, contentDescription = "Выбрано")
+                    }
+                }
+                Divider()
+            }
+            
+            item {
+                Spacer(Modifier.height(16.dp))
+                Text("Дополнительные настройки", style = MaterialTheme.typography.h6)
+                Spacer(Modifier.height(8.dp))
+            }
+            
+            item {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("Номера строк")
+                    Switch(
+                        checked = vm.editorLineNumbers.value, 
+                        onCheckedChange = { vm.setEditorLineNumbers(it) }
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+            
+            item {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("Подсветка текущей строки")
+                    Switch(
+                        checked = vm.editorHighlightLine.value, 
+                        onCheckedChange = { vm.setEditorHighlightLine(it) }
+                    )
+                }
             }
         }
     }
