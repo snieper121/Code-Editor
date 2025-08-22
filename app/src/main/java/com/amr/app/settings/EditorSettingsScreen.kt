@@ -1,7 +1,7 @@
 package com.amr.app.settings
 
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
@@ -16,8 +16,8 @@ import androidx.compose.material.icons.filled.Check
 
 @Composable
 fun EditorSettingsScreen(navController: NavController, vm: SettingsViewModel = viewModel()) {
-    val fontSizeOptions = listOf(12, 14, 16, 18, 20, 22, 24, 26, 28, 30)
-    val scaleOptions = listOf(0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f)
+    var fontSizeText by remember { mutableStateOf(vm.editorFontSizePx.value.toString()) }
+    var scaleText by remember { mutableStateOf(String.format("%.1f", vm.editorScale.value)) }
     
     Scaffold(
         topBar = {
@@ -33,50 +33,42 @@ fun EditorSettingsScreen(navController: NavController, vm: SettingsViewModel = v
     ) { padding ->
         LazyColumn(Modifier.padding(padding).padding(16.dp)) {
             item {
-                Text("Размер шрифта", style = MaterialTheme.typography.h6)
+                Text("Размер шрифта (px)", style = MaterialTheme.typography.h6)
                 Spacer(Modifier.height(8.dp))
-            }
-            
-            items(fontSizeOptions) { size ->
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable { vm.setEditorFontSizePx(size) }
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("${size}px")
-                    if (vm.editorFontSizePx.value == size) {
-                        Icon(Icons.Default.Check, contentDescription = "Выбрано")
-                    }
-                }
-                Divider()
+                OutlinedTextField(
+                    value = fontSizeText,
+                    onValueChange = { 
+                        fontSizeText = it
+                        it.toIntOrNull()?.let { size ->
+                            if (size in 8..40) vm.setEditorFontSizePx(size)
+                        }
+                    },
+                    label = { Text("Размер шрифта") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                Spacer(Modifier.height(16.dp))
             }
             
             item {
-                Spacer(Modifier.height(16.dp))
                 Text("Масштаб редактора", style = MaterialTheme.typography.h6)
                 Spacer(Modifier.height(8.dp))
-            }
-            
-            items(scaleOptions) { scale ->
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable { vm.setEditorScale(scale) }
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("${String.format("%.1f", scale)}x")
-                    if (vm.editorScale.value == scale) {
-                        Icon(Icons.Default.Check, contentDescription = "Выбрано")
-                    }
-                }
-                Divider()
+                OutlinedTextField(
+                    value = scaleText,
+                    onValueChange = { 
+                        scaleText = it
+                        it.toFloatOrNull()?.let { scale ->
+                            if (scale in 0.5f..2.0f) vm.setEditorScale(scale)
+                        }
+                    },
+                    label = { Text("Масштаб (0.5 - 2.0)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                Spacer(Modifier.height(16.dp))
             }
             
             item {
-                Spacer(Modifier.height(16.dp))
                 Text("Дополнительные настройки", style = MaterialTheme.typography.h6)
                 Spacer(Modifier.height(8.dp))
             }
@@ -102,5 +94,14 @@ fun EditorSettingsScreen(navController: NavController, vm: SettingsViewModel = v
                 }
             }
         }
+    }
+    
+    // Обновляем текстовые поля при изменении значений
+    LaunchedEffect(vm.editorFontSizePx.value) {
+        fontSizeText = vm.editorFontSizePx.value.toString()
+    }
+    
+    LaunchedEffect(vm.editorScale.value) {
+        scaleText = String.format("%.1f", vm.editorScale.value)
     }
 }

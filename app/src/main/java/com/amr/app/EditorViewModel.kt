@@ -48,8 +48,8 @@ class EditorViewModel : ViewModel() {
             }
         }
     }
-    
-    private suspend fun listChildren(documentFile: DocumentFile, depth: Int): List<FileTreeNode> {
+
+/*    private suspend fun listChildren(documentFile: DocumentFile, depth: Int): List<FileTreeNode> {
         return documentFile.listFiles()
             .sortedWith(compareBy<DocumentFile>({ !it.isDirectory }, { it.name ?: "" }))
             .map { child ->
@@ -63,7 +63,29 @@ class EditorViewModel : ViewModel() {
                     isLoading = false
                 )
             }
+    }*/
+
+    private suspend fun listChildren(documentFile: DocumentFile, depth: Int): List<FileTreeNode> {
+        println("Loading children for: ${documentFile.name} at depth $depth")
+        val files = documentFile.listFiles()
+        println("Found ${files.size} items")
+        
+        return files
+            .sortedWith(compareBy<DocumentFile>({ !it.isDirectory }, { it.name ?: "" }))
+            .map { child ->
+                println("  - ${child.name} (${if (child.isDirectory) "dir" else "file"})")
+                FileTreeNode(
+                    name = child.name ?: "unknown",
+                    uri = child.uri,
+                    isDirectory = child.isDirectory,
+                    children = if (child.isDirectory) null else emptyList(),
+                    depth = depth,
+                    isExpanded = false,
+                    isLoading = false
+                )
+            }
     }
+    
     
     private fun updateNode(
         current: FileTreeNode,
@@ -80,6 +102,7 @@ class EditorViewModel : ViewModel() {
         _fileTree.value?.let { root ->
             // Сначала обновляем состояние разворачивания
             _fileTree.value = updateNode(root, nodeToToggle.id) { it.copy(isExpanded = expanding) }
+    
             // Если разворачиваем папку и у неё нет детей
             if (expanding && nodeToToggle.isDirectory && nodeToToggle.children == null) {
                 viewModelScope.launch {
@@ -89,10 +112,11 @@ class EditorViewModel : ViewModel() {
                             updateNode(r, nodeToToggle.id) { it.copy(isLoading = true) }
                         }
                         
-                        // Загружаем детей
+                        // Загружаем детей ТОЛЬКО для этой папки
                         val children = withContext(Dispatchers.IO) {
                             val doc = DocumentFile.fromTreeUri(context, nodeToToggle.uri)
                             if (doc != null && doc.isDirectory) {
+                                // Важно: загружаем детей именно этой папки, а не корня
                                 listChildren(doc, nodeToToggle.depth + 1)
                             } else {
                                 emptyList()
