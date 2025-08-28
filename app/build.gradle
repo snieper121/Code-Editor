@@ -5,7 +5,7 @@ plugins {
 
 android {
     compileSdkVersion 34
-    namespace 'com.amrdeveloper.codeviewlibrary'
+    namespace 'com.snieper121.codeeditor'
     
     buildFeatures {
         compose true
@@ -16,7 +16,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.amrdeveloper.codeviewlibrary"
+        applicationId "com.snieper121.codeeditor"
         minSdkVersion 21
         targetSdkVersion 34
         versionCode 1
