@@ -20,6 +20,7 @@ class EditorViewModel : ViewModel() {
 
     private val _tabs = MutableStateFlow<List<FileTab>>(emptyList())
     val tabs = _tabs.asStateFlow()
+    
     private val _activeTabIndex = MutableStateFlow(0)
     val activeTabIndex = _activeTabIndex.asStateFlow()
 
