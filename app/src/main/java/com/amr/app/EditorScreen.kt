@@ -34,7 +34,6 @@ import androidx.navigation.NavController
 import com.amrdeveloper.codeview.Code
 import com.amrdeveloper.codeviewlibrary.CustomCodeViewAdapter
 import com.amrdeveloper.codeviewlibrary.R
-import com.snieper121.codeeditor.R
 import com.amrdeveloper.codeviewlibrary.syntax.LanguageManager
 import com.amrdeveloper.codeviewlibrary.syntax.LanguageName
 import com.amrdeveloper.codeviewlibrary.syntax.ThemeName
