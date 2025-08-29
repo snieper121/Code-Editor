@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">CodeView</string>
+    <string name="app_name">Code / IDE</string>
 
     <!-- Actions -->
     <string name="find_and_replace">Find And Replace</string>
