@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 rootProject.name = "CodeView"
 include ':codeview'
 include ':app'
+include ':terminal-module'
