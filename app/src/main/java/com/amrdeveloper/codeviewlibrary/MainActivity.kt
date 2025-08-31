@@ -15,6 +15,7 @@ import com.amr.app.settings.EditorSettingsScreen
 import com.amr.app.settings.AppSettingsScreen
 import com.amr.app.settings.TerminalSettingsScreen
 import com.amr.app.settings.FormatterSettingsScreen
+import com.amrdeveloper.terminal.ui.TerminalScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,7 +34,8 @@ fun MainAppNavigation() {
     NavHost(navController = navController, startDestination = Routes.EDITOR) {
         composable(Routes.EDITOR) { EditorScreen(navController) }
         composable(Routes.SETTINGS) { SettingsScreen(navController) }
-        
+        composable("terminal") { TerminalScreen(navController) }
+
         // --- РЕГИСТРИРУЕМ ВСЕ ЭКРАНЫ-ЗАГЛУШКИ ---
         composable(Routes.EDITOR_SETTINGS) { EditorSettingsScreen(navController) }
         composable(Routes.APP_SETTINGS) { AppSettingsScreen(navController) }

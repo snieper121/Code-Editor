@@ -145,6 +145,13 @@ fun EditorScreen(
                             navController.navigate(Routes.SETTINGS)
                             showMenu = false
                         }) { Text("Настройки") }
+                        DropdownMenuItem(
+                            text = { Text("Terminal") },
+                            onClick = {
+                                navController.navigate("terminal")
+                                // Закрыть меню
+                            }
+                        )
                     }
                 }
             )
