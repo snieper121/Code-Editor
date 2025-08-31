@@ -1,5 +1,12 @@
 package com.amr.app
 
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.Text
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import android.util.TypedValue
 import android.graphics.Color
 import android.content.Intent
@@ -145,12 +152,11 @@ fun EditorScreen(
                             navController.navigate(Routes.SETTINGS)
                             showMenu = false
                         }) { Text("Настройки") }
-                        DropdownMenuItem(
-                            text = { Text("Terminal") },
-                            onClick = {
-                                navController.navigate("terminal")
-                                // Закрыть меню
-                            }
+                        DropdownMenuItem(onClick = {
+                            navController.navigate("terminal")
+                            expanded = false
+                            },
+                            text = { Text("Terminal") }
                         )
                     }
                 }
