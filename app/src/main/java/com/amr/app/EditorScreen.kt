@@ -2,6 +2,8 @@ package com.amr.app
 
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -12,6 +14,7 @@ import android.graphics.Color
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -49,6 +52,7 @@ import java.util.HashMap
 
 import com.amr.app.settings.SettingsViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditorScreen(
     navController: NavController,
@@ -124,7 +128,7 @@ fun EditorScreen(
         topBar = {
             TopAppBar(
                 modifier = Modifier.height(48.dp),
-                title = { Text("Code Editor") },
+                title = { Text("Code / IDE") },
                 navigationIcon = {
                     IconButton(onClick = { scope.launch { scaffoldState.drawerState.open() } }) {
                         Icon(Icons.Default.Menu, contentDescription = "Файловый менеджер")
@@ -152,12 +156,15 @@ fun EditorScreen(
                             navController.navigate(Routes.SETTINGS)
                             showMenu = false
                         }) { Text("Настройки") }
-                        DropdownMenuItem(onClick = {
-                            navController.navigate("terminal")
-                            expanded = false
-                            },
-                            text = { Text("Terminal") }
-                        )
+                        
+                        DropdownMenuItem(
+                            onClick = {
+                                navController.navigate("terminal")
+                                showMenu = false
+                            }
+                        ) { 
+                            Text("Terminal") 
+                        }
                     }
                 }
             )
