@@ -11,7 +11,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import android.util.TypedValue
-import android.graphics.Color
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -328,7 +327,8 @@ fun CodeViewForTab(
         modifier = Modifier.fillMaxSize(),
         factory = { context ->
             com.amrdeveloper.codeview.CodeView(context).apply {
-                setBackgroundColor(Color.parseColor("#212121"))
+                setBackgroundColor(android.graphics.Color.parseColor("#212121"))
+                
                 val jetBrainsMono = ResourcesCompat.getFont(context, R.font.jetbrains_mono_medium)
                 this.typeface = jetBrainsMono
                 
@@ -337,11 +337,11 @@ fun CodeViewForTab(
                 // this.scaleY = editorScale
                 
                 this.setEnableLineNumber(showLineNumbers)
-                this.setLineNumberTextColor(Color.GRAY)
+                this.setLineNumberTextColor(android.graphics.Color.GRAY)
                 this.setLineNumberTextSize((fontSizePx * 1.2f))
 
                 this.setEnableHighlightCurrentLine(highlightLine)
-                this.setHighlightCurrentLineColor(Color.DKGRAY)
+                this.setHighlightCurrentLineColor(android.graphics.Color.DKGRAY)
 
                 this.setTabLength(4)
                 this.setEnableAutoIndentation(true)
@@ -443,14 +443,20 @@ fun FileTreeItem(node: FileTreeNode, onClick: () -> Unit) {
             CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
             Spacer(Modifier.width(8.dp))
         } else {
-            Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(18.dp))
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = Color.White
+            )
             Spacer(Modifier.width(8.dp))
         }
         Text(
             text = node.name,
             fontSize = 14.sp,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
+            color = Color.White
         )
     }
 }
