@@ -22,7 +22,6 @@ import androidx.navigation.NavController
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TerminalSettingsScreen(navController: NavController) {
-    var isDarkTheme by remember { mutableStateOf(true) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val isDarkTheme by TerminalThemePrefs.isDarkTheme(context).collectAsState(initial = true)
@@ -33,14 +32,8 @@ fun TerminalSettingsScreen(navController: NavController) {
             .background(Color.Black)  // ← ТЕМНЫЙ ФОН
             .padding(16.dp)
     ) {
-    
         TopAppBar(
-            title = {
-                Text(
-                    "Настройки терминала",
-                    color = Color.White
-                )
-            },
+            title = { Text("Настройки терминала", color = Color.White) },
             navigationIcon = {
                 IconButton(onClick = { navController.navigateUp() }) {
                     Icon(

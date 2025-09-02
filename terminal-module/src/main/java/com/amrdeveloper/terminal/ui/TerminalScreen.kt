@@ -1,8 +1,5 @@
 package com.amrdeveloper.terminal.ui
 
-import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.platform.LocalContext
-import com.amr.app.settings.TerminalThemePrefs
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -10,18 +7,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TerminalScreen(navController: NavController) {
-    
-    val context = LocalContext.current
-    val isDarkTheme by TerminalThemePrefs.isDarkTheme(context).collectAsState(initial = true)
-    
+fun TerminalScreen(
+    navController: NavController,
+    isDarkTheme: Boolean
+) {
     val bg = if (isDarkTheme) Color.Black else Color.White
     val fg = if (isDarkTheme) Color.White else Color.Black
     val hint = if (isDarkTheme) Color(0xFFAAAAAA) else Color(0xFF444444)

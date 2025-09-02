@@ -16,6 +16,9 @@ import com.amr.app.settings.AppSettingsScreen
 import com.amr.app.settings.TerminalSettingsScreen
 import com.amr.app.settings.FormatterSettingsScreen
 import com.amrdeveloper.terminal.ui.TerminalScreen
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
+import com.amr.app.settings.TerminalThemePrefs
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,8 +37,15 @@ fun MainAppNavigation() {
     NavHost(navController = navController, startDestination = Routes.EDITOR) {
         composable(Routes.EDITOR) { EditorScreen(navController) }
         composable(Routes.SETTINGS) { SettingsScreen(navController) }
-        composable("terminal") { TerminalScreen(navController) }
-
+    val context = LocalContext.current
+    val isDarkTheme by TerminalThemePrefs.isDarkTheme(context).collectAsState(initial = true)
+    
+    composable(Routes.TERMINAL) {
+        TerminalScreen(
+            navController = navController,
+            isDarkTheme = isDarkTheme
+        )
+    }
         // --- РЕГИСТРИРУЕМ ВСЕ ЭКРАНЫ-ЗАГЛУШКИ ---
         composable(Routes.EDITOR_SETTINGS) { EditorSettingsScreen(navController) }
         composable(Routes.APP_SETTINGS) { AppSettingsScreen(navController) }
