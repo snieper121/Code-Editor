@@ -1,9 +1,14 @@
 package com.amr.app.settings
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,6 +23,9 @@ import androidx.navigation.NavController
 @Composable
 fun TerminalSettingsScreen(navController: NavController) {
     var isDarkTheme by remember { mutableStateOf(true) }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val isDarkTheme by TerminalThemePrefs.isDarkTheme(context).collectAsState(initial = true)
     
     Column(
         modifier = Modifier
@@ -25,26 +33,32 @@ fun TerminalSettingsScreen(navController: NavController) {
             .background(Color.Black)  // ← ТЕМНЫЙ ФОН
             .padding(16.dp)
     ) {
+    
         TopAppBar(
-            title = { 
+            title = {
                 Text(
                     "Настройки терминала",
-                    color = Color.White  // ← БЕЛЫЙ ТЕКСТ
-                ) 
+                    color = Color.White
+                )
             },
             navigationIcon = {
                 IconButton(onClick = { navController.navigateUp() }) {
                     Icon(
-                        Icons.Default.ArrowBack,
+                        imageVector = Icons.Filled.ArrowBack,
                         contentDescription = "Назад",
-                        tint = Color.White  // ← БЕЛАЯ ИКОНКА
+                        tint = Color.White
                     )
                 }
-            }
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = Color.Black,
+                titleContentColor = Color.White,
+                navigationIconContentColor = Color.White,
+                actionIconContentColor = Color.White
+            )
         )
         
         Spacer(modifier = Modifier.height(24.dp))
-        
         // Переключатель темы
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -76,7 +90,9 @@ fun TerminalSettingsScreen(navController: NavController) {
                     )
                     Switch(
                         checked = isDarkTheme,
-                        onCheckedChange = { isDarkTheme = it },
+                        onCheckedChange = { checked ->
+                            scope.launch { TerminalThemePrefs.setDarkTheme(context, checked) }
+                        },
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = Color.Green,
                             checkedTrackColor = Color.Green.copy(alpha = 0.5f),

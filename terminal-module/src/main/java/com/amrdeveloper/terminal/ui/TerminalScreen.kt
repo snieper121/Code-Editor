@@ -1,5 +1,8 @@
 package com.amrdeveloper.terminal.ui
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
+import com.amr.app.settings.TerminalThemePrefs
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -15,19 +18,30 @@ import androidx.navigation.NavController
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TerminalScreen(navController: NavController) {
+    
+    val context = LocalContext.current
+    val isDarkTheme by TerminalThemePrefs.isDarkTheme(context).collectAsState(initial = true)
+    
+    val bg = if (isDarkTheme) Color.Black else Color.White
+    val fg = if (isDarkTheme) Color.White else Color.Black
+    val hint = if (isDarkTheme) Color(0xFFAAAAAA) else Color(0xFF444444)
+    
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)  // ← Темный фон
+            .background(bg)
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Text(
             text = "Terminal",
+            color = fg, /* ... */
+        /*Text(
+            text = "Terminal",
             color = Color.White,  // ← Светлые символы
             fontFamily = FontFamily.Monospace,
-            fontSize = 24.sp
+            fontSize = 24.sp*/
         )
         
         Spacer(modifier = Modifier.height(16.dp))
@@ -40,12 +54,15 @@ fun TerminalScreen(navController: NavController) {
         )
         
         Spacer(modifier = Modifier.height(16.dp))
-        
+        Text(
+            text = "Go to Settings → Terminal Settings to customize colors",
+            color = hint,
+        /*
         Text(
             text = "Go to Settings → Terminal Settings to customize colors",
             color = Color.Gray,  // ← Серый текст для подсказки
             fontFamily = FontFamily.Monospace,
-            fontSize = 12.sp
+            fontSize = 12.sp*/
         )
         
         Spacer(modifier = Modifier.height(32.dp))
