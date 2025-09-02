@@ -97,13 +97,18 @@ fun EditorScreen(
         scaffoldState = scaffoldState,
         drawerGesturesEnabled = scaffoldState.drawerState.isOpen,
         drawerContent = {
-            Column(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black)
+                ) {
                 Text(
                     "Файловый менеджер",
                     style = MaterialTheme.typography.h6,
+                    color = Color.White,
                     modifier = Modifier.padding(16.dp)
                 )
-                Divider()
+                Divider(color = Color.Gray)
                 fileTree?.let { rootNode ->
                     FileTreeView(
                         root = rootNode,
@@ -120,43 +125,98 @@ fun EditorScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(color = Color.White)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("Загрузка дерева...")
+                    Text(
+                        "Загрузка дерева...",
+                        color = Color.White
+                    )
                 }
             }
         },
         topBar = {
             TopAppBar(
                 modifier = Modifier.height(48.dp),
-                title = { Text("Code / IDE") },
+                title = {
+                    Text(
+                        "Code / IDE",
+                        color = Color.White
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { scope.launch { scaffoldState.drawerState.open() } }) {
-                        Icon(Icons.Default.Menu, contentDescription = "Файловый менеджер")
+                        Icon(
+                            Icons.Default.Menu,
+                            contentDescription = "Файловый менеджер",
+                            tint = Color.White
+                        )
                     }
                 },
                 actions = {
                     IconButton(onClick = { showMenu = !showMenu }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Действия")
+                        Icon(
+                            Icons.Default.MoreVert,
+                            contentDescription = "Действия",
+                            tint = Color.White
+                        )
                     }
-                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                        DropdownMenuItem(onClick = {
-                            folderPickerLauncher.launch(null)
-                            showMenu = false
-                        }) { Text("Выбрать папку проекта") }
-                        Divider()
-                        DropdownMenuItem(onClick = {
-                            editorViewModel.createNewTab()
-                            showMenu = false
-                        }) { Text("Новый файл") }
-                        Divider()
-                        DropdownMenuItem(onClick = { /* TODO */ ; showMenu = false }) { Text("Сохранить") }
-                        DropdownMenuItem(onClick = { /* TODO */ ; showMenu = false }) { Text("Сохранить как...") }
-                        Divider()
-                        DropdownMenuItem(onClick = {
-                            navController.navigate(Routes.SETTINGS)
-                            showMenu = false
-                        }) { Text("Настройки") }
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false },
+                        modifier = Modifier.background(Color.Black)
+                    ) {
+                        DropdownMenuItem(
+                            onClick = {
+                                folderPickerLauncher.launch(null)
+                                showMenu = false
+                            }
+                        ) {
+                            Text(
+                                "Выбрать папку проекта",
+                                color = Color.White
+                            )
+                        }
+                        Divider(color = Color.Gray)
+                        DropdownMenuItem(
+                            onClick = {
+                                editorViewModel.createNewTab()
+                                showMenu = false
+                            }
+                        ) {
+                            Text(
+                                "Новый файл",
+                                color = Color.White
+                            )
+                        }
+                        Divider(color = Color.Gray)
+                        DropdownMenuItem(
+                            onClick = { /* TODO */ ; showMenu = false }
+                        ) {
+                            Text(
+                                "Сохранить",
+                                color = Color.White
+                            )
+                        }
+                        DropdownMenuItem(
+                            onClick = { /* TODO */ ; showMenu = false }
+                        ) {
+                            Text(
+                                "Сохранить как...",
+                                color = Color.White
+                            )
+                        }
+                        Divider(color = Color.Gray)
+                        DropdownMenuItem(
+                            onClick = {
+                                navController.navigate(Routes.SETTINGS)
+                                showMenu = false
+                            }
+                        ) { 
+                            Text(
+                                "Настройки",
+                                color = Color.White  // ← БЕЛЫЙ ТЕКСТ
+                            ) 
+                        }
                         
                         DropdownMenuItem(
                             onClick = {
@@ -164,7 +224,10 @@ fun EditorScreen(
                                 showMenu = false
                             }
                         ) { 
-                            Text("Terminal") 
+                            Text(
+                                "Terminal",
+                                color = Color.White  // ← БЕЛЫЙ ТЕКСТ
+                            )
                         }
                     }
                 }

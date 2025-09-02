@@ -18,14 +18,14 @@ fun TerminalScreen(navController: NavController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(Color.Black)  // ← Темный фон
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Text(
             text = "Terminal",
-            color = Color.Green,
+            color = Color.White,  // ← Светлые символы
             fontFamily = FontFamily.Monospace,
             fontSize = 24.sp
         )
@@ -34,21 +34,46 @@ fun TerminalScreen(navController: NavController) {
         
         Text(
             text = "Terminal module is ready!",
-            color = Color.Green,
+            color = Color.White,  // ← Светлые символы
             fontFamily = FontFamily.Monospace,
             fontSize = 16.sp
         )
         
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Text(
+            text = "Go to Settings → Terminal Settings to customize colors",
+            color = Color.Gray,  // ← Серый текст для подсказки
+            fontFamily = FontFamily.Monospace,
+            fontSize = 12.sp
+        )
+        
         Spacer(modifier = Modifier.height(32.dp))
         
-        Button(
-            onClick = { navController.navigateUp() },
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color.Green,
-                contentColor = Color.Black
-            )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text("Back")
+            Button(
+                onClick = { navController.navigateUp() },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Green,
+                    contentColor = Color.Black
+                )
+            ) {
+                Text("Back")
+            }
+            
+            Button(
+                onClick = { 
+                    navController.navigate("terminal_settings") 
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Blue,
+                    contentColor = Color.White
+                )
+            ) {
+                Text("Settings")
+            }
         }
     }
 }
